@@ -1,4 +1,4 @@
-package postgres_explain
+package pkg
 
 import (
 	"math"

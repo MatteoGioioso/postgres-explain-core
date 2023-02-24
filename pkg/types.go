@@ -1,3 +1,3 @@
-package postgres_explain
+package pkg
 
 type Node map[string]interface{}
