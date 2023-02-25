@@ -23,6 +23,7 @@ const (
 	INDEX_NAME_PROP          = "Index Name"
 	HASH_CONDITION_PROP      = "Hash Cond"
 	EXECUTION_TIME_PROP      = "Execution Time"
+	TOTAL_RUNTIME            = "Total Runtime"
 
 	// computed
 	COMPUTED_TAGS_PROP = "*Tags"

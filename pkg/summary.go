@@ -71,9 +71,15 @@ func (s *Summary) getNode(node Node, level int) NodeSummary {
 		node[ACTUAL_ROWS_PROP],
 		node[ACTUAL_LOOPS_PROP],
 	}
+
+	var rel string
+	if node[RELATION_NAME_PROP] != nil {
+		rel = node[RELATION_NAME_PROP].(string)
+	}
+
 	return NodeSummary{
 		Operation: node[NODE_TYPE_PROP].(string),
-		Relation:  node[RELATION_NAME_PROP].(string),
+		Relation:  rel,
 		Level:     level,
 		Costs: fmt.Sprintf(
 			"(cost=%v...%v rows=%v width=%v) (actual time=cost=%v...%v rows=%v loops=%v)",
