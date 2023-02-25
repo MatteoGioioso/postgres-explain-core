@@ -1,37 +1,51 @@
 package pkg
 
-import "fmt"
+import (
+	"fmt"
+)
 
-type planRow struct {
-	level         int
-	nodes         string
-	inclusive     float64
-	loops         float64
-	rows          float64
-	exclusive     float64
-	rows_x        float64
-	executionTime float64
+type PlanRow struct {
+	Level         int     `json:"level"`
+	Nodes         string  `json:"nodes"`
+	Inclusive     float64 `json:"inclusive"`
+	Loops         float64 `json:"loops"`
+	Rows          float64 `json:"rows"`
+	Exclusive     float64 `json:"exclusive"`
+	Rows_x        float64 `json:"rows_x"`
+	ExecutionTime float64 `json:"execution_time"`
 }
 
 type Summary struct {
-	planTable []planRow
+	planTable []PlanRow
 }
 
-func (s *Summary) RecurseNode(node Node, stats map[string]interface{}, level int) {
-	s.planTable = append(s.planTable, planRow{
-		level:         level,
-		nodes:         s.formatNode(node, level),
-		inclusive:     node[PropsExported.ACTUAL_TOTAL_TIME_PROP].(float64),
-		loops:         node[PropsExported.ACTUAL_LOOPS_PROP].(float64),
-		rows:          node[PropsExported.ACTUAL_ROWS_PROP].(float64),
-		exclusive:     node[PropsExported.ACTUAL_DURATION_PROP].(float64),
-		rows_x:        node[PropsExported.PLANNER_ESTIMATE_FACTOR].(float64),
-		executionTime: stats[PropsExported.EXECUTION_TIME_PROP].(float64),
+func NewSummary() *Summary {
+	return &Summary{
+		planTable: make([]PlanRow, 0),
+	}
+}
+
+func (s *Summary) Do(node Node, stats Stats) []PlanRow {
+	s.recurseNode(node, stats, 0)
+
+	return s.planTable
+}
+
+func (s *Summary) recurseNode(node Node, stats Stats, level int) {
+	s.planTable = append(s.planTable, PlanRow{
+		Level:         level,
+		Nodes:         s.formatNode(node, level),
+		Inclusive:     node[PropsExported.ACTUAL_TOTAL_TIME_PROP].(float64),
+		Loops:         node[PropsExported.ACTUAL_LOOPS_PROP].(float64),
+		Rows:          node[PropsExported.ACTUAL_ROWS_PROP].(float64),
+		Exclusive:     node[PropsExported.ACTUAL_DURATION_PROP].(float64),
+		Rows_x:        node[PropsExported.PLANNER_ESTIMATE_FACTOR].(float64),
+		ExecutionTime: stats.ExecutionTime,
 	})
 
 	if node[PropsExported.PLANS_PROP] != nil {
 		for _, subNode := range node[PropsExported.PLANS_PROP].([]interface{}) {
-			s.RecurseNode(subNode.(Node), stats, level+1)
+			s.recurseNode(subNode.(Node), stats, level+1)
 		}
 	}
 }
