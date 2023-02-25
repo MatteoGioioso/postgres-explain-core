@@ -97,10 +97,11 @@ func (ps *PlanEnricher) calculatePlannerEstimate(node Node) {
 	}
 
 	if math.IsInf(node[PLANNER_ESTIMATE_FACTOR].(float64), 0) {
-		node[PLANNER_ESTIMATE_FACTOR] = 0
+		node[PLANNER_ESTIMATE_FACTOR] = float64(0)
+		return
 	}
 	if math.IsNaN(node[PLANNER_ESTIMATE_FACTOR].(float64)) {
-		node[PLANNER_ESTIMATE_FACTOR] = 0
+		node[PLANNER_ESTIMATE_FACTOR] = float64(0)
 	}
 }
 
