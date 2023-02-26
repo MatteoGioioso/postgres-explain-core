@@ -40,6 +40,9 @@ const (
 	PLANNER_ESTIMATE_FACTOR    = "*Planner Row Estimate Factor"
 	PLANNER_ESTIMATE_DIRECTION = "*Planner Row Estimate Direction"
 
+	PARENT_RELATIONSHIP = "Parent Relationship"
+	SUBPLAN_NAME        = "Subplan Name"
+
 	CTE_SCAN_PROP = "CTE Scan"
 	CTE_NAME_PROP = "CTE Name"
 

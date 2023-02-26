@@ -1,7 +1,10 @@
 package pkg
 
+// https://github.com/dalibo/pev2/blob/652bbc9041fde4f1df7df03e2500c2beaea5c3f5/src/services/plan-service.ts#L108
+
 import (
 	"math"
+	"strings"
 )
 
 type PlanEnricher struct {
@@ -18,27 +21,40 @@ func NewPlanEnricher() *PlanEnricher {
 	}
 }
 
-func (ps *PlanEnricher) AnalyzePlan(plan map[string]interface{}) {
-	ps.processNode(plan)
-	plan[MAXIMUM_ROWS_PROP] = ps.maxRows
-	plan[MAXIMUM_COSTS_PROP] = ps.maxCost
-	plan[MAXIMUM_DURATION_PROP] = ps.maxDuration
+func (ps *PlanEnricher) AnalyzePlan(rootNode Node) {
+	ps.processNode(rootNode)
+	rootNode[MAXIMUM_ROWS_PROP] = ps.maxRows
+	rootNode[MAXIMUM_COSTS_PROP] = ps.maxCost
+	rootNode[MAXIMUM_DURATION_PROP] = ps.maxDuration
 
-	ps.findOutlierNodes(plan)
+	ps.findOutlierNodes(rootNode)
+}
+
+func (ps *PlanEnricher) isCTE(node Node) bool {
+	return node[PARENT_RELATIONSHIP] == "InitPlan" && strings.HasPrefix(node[SUBPLAN_NAME].(string), "CTE")
 }
 
 func (ps *PlanEnricher) processNode(node Node) {
 	ps.calculatePlannerEstimate(node)
-	ps.calculateActuals(node)
+
 	for key, value := range node {
 		ps.calculateMaximums(node, key, value)
 
 		if key == PLANS_PROP {
 			for _, value := range value.([]interface{}) {
+				if !ps.isCTE(node) {
+
+				}
+				if ps.isCTE(node) {
+
+				}
+
 				ps.processNode(value.(Node))
 			}
 		}
 	}
+
+	ps.calculateActuals(node)
 }
 
 func (ps *PlanEnricher) calculateMaximums(node Node, key string, value interface{}) {

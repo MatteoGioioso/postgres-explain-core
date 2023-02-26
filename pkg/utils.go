@@ -24,3 +24,9 @@ func GetRootNodeFromPlans(plans string) (Node, error) {
 
 	return p[0].Plan, nil
 }
+
+// ConvertTextPlanToJson
+// TODO: https://github.com/dalibo/pev2/blob/652bbc9041fde4f1df7df03e2500c2beaea5c3f5/src/services/plan-service.ts#L493
+func ConvertTextPlanToJson(text string) (Node, error) {
+	return nil, nil
+}
