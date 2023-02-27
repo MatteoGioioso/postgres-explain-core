@@ -1,0 +1,42 @@
+{
+  "name": "postgres-explain",
+  "version": "1.0.0",
+  "description": "components for postgres explain visualizer",
+  "main": "./dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/MatteoGioioso/postgres-explain.git"
+  },
+  "keywords": [
+    "postgreSQL",
+    "SQL"
+  ],
+  "author": "Matteo Gioioso",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MatteoGioioso/postgres-explain/issues"
+  },
+  "homepage": "https://github.com/MatteoGioioso/postgres-explain#readme",
+  "devDependencies": {
+    "typescript": "^4.9.5"
+  },
+  "engines": {
+    "node": ">=17.0.0"
+  },
+  "dependencies": {
+    "@cloudscape-design/components": "^3.0.209",
+    "@cloudscape-design/global-styles": "^1.0.7",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "peerDependencies": {
+    "@cloudscape-design/components": "^3.0.209",
+    "@cloudscape-design/global-styles": "^1.0.7",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}

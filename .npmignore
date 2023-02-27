@@ -1,0 +1,5 @@
+node_modules
+pkg
+components
+go.*
+tsconfig.json
