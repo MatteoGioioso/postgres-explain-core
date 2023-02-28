@@ -3,7 +3,6 @@ package pkg
 // https://github.com/dalibo/pev2/blob/652bbc9041fde4f1df7df03e2500c2beaea5c3f5/src/services/plan-service.ts#L108
 
 import (
-	"math"
 	"strings"
 )
 
@@ -104,19 +103,21 @@ func (ps *PlanEnricher) findOutlierNodes(node Node) {
 }
 
 func (ps *PlanEnricher) calculatePlannerEstimate(node Node) {
-	node[PLANNER_ESTIMATE_FACTOR] = node[ACTUAL_ROWS_PROP].(float64) / node[PLAN_ROWS_PROP].(float64)
-	node[PLANNER_ESTIMATE_DIRECTION] = node[PLANNER_ESTIMATE_FACTOR].(float64) >= 1
-
-	if node[PLANNER_ESTIMATE_FACTOR].(float64) < 1 {
-		node[PLANNER_ESTIMATE_DIRECTION] = EstimateDirectionOver
-		node[PLANNER_ESTIMATE_FACTOR] = node[PLAN_ROWS_PROP].(float64) / node[ACTUAL_ROWS_PROP].(float64)
-	}
-
-	if math.IsInf(node[PLANNER_ESTIMATE_FACTOR].(float64), 0) {
+	if node[ACTUAL_ROWS_PROP] != nil && node[PLAN_ROWS_PROP] != nil {
+		node[PLANNER_ESTIMATE_DIRECTION] = EstimateDirectionNone
 		node[PLANNER_ESTIMATE_FACTOR] = float64(0)
-		return
-	}
-	if math.IsNaN(node[PLANNER_ESTIMATE_FACTOR].(float64)) {
+
+		if node[ACTUAL_ROWS_PROP].(float64) < node[PLAN_ROWS_PROP].(float64) {
+			node[PLANNER_ESTIMATE_DIRECTION] = EstimateDirectionOver
+			node[PLANNER_ESTIMATE_FACTOR] = node[PLAN_ROWS_PROP].(float64) / node[ACTUAL_ROWS_PROP].(float64)
+		}
+
+		if node[ACTUAL_ROWS_PROP].(float64) > node[PLAN_ROWS_PROP].(float64) {
+			node[PLANNER_ESTIMATE_DIRECTION] = EstimateDirectionUnder
+			node[PLANNER_ESTIMATE_FACTOR] = node[ACTUAL_ROWS_PROP].(float64) / node[PLAN_ROWS_PROP].(float64)
+		}
+	} else {
+		node[PLANNER_ESTIMATE_DIRECTION] = EstimateDirectionNone
 		node[PLANNER_ESTIMATE_FACTOR] = float64(0)
 	}
 }

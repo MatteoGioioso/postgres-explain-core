@@ -4,27 +4,6 @@ import (
 	"fmt"
 )
 
-type NodeSummary struct {
-	Operation string `json:"operation"`
-	Level     int    `json:"level"`
-	Costs     string `json:"costs"`
-	Buffers   string `json:"buffers"`
-	Relation  string `json:"relation"`
-}
-
-type PlanRow struct {
-	Level         int         `json:"level"`
-	Node          NodeSummary `json:"node"`
-	Inclusive     float64     `json:"inclusive"`
-	Loops         float64     `json:"loops"`
-	Rows          float64     `json:"rows"`
-	Exclusive     float64     `json:"exclusive"`
-	Rows_x        float64     `json:"rows_x"`
-	ExecutionTime float64     `json:"execution_time"`
-	Reads         float64     `json:"reads"`
-	Written       float64     `json:"written"`
-}
-
 type Summary struct {
 	planTable []PlanRow
 }
@@ -43,13 +22,16 @@ func (s *Summary) Do(node Node, stats StatsFromPlan) []PlanRow {
 
 func (s *Summary) recurseNode(node Node, stats StatsFromPlan, level int) {
 	s.planTable = append(s.planTable, PlanRow{
-		Level:         level,
-		Node:          s.getNode(node, level),
-		Inclusive:     node[ACTUAL_TOTAL_TIME_PROP].(float64),
-		Loops:         node[ACTUAL_LOOPS_PROP].(float64),
-		Rows:          node[ACTUAL_ROWS_PROP].(float64),
-		Exclusive:     node[ACTUAL_DURATION_PROP].(float64),
-		Rows_x:        node[PLANNER_ESTIMATE_FACTOR].(float64),
+		Level:     level,
+		Node:      s.getNode(node, level),
+		Inclusive: node[ACTUAL_TOTAL_TIME_PROP].(float64),
+		Loops:     node[ACTUAL_LOOPS_PROP].(float64),
+		Rows:      node[ACTUAL_ROWS_PROP].(float64),
+		Exclusive: node[ACTUAL_DURATION_PROP].(float64),
+		Rows_x: EstimateFactor{
+			Value:     node[PLANNER_ESTIMATE_FACTOR].(float64),
+			Direction: node[PLANNER_ESTIMATE_DIRECTION].(string),
+		},
 		ExecutionTime: stats.ExecutionTime,
 	})
 
