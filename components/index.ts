@@ -1,7 +1,8 @@
 import { SummaryTable } from './SummaryTable'
-import { Stats, SummaryTableProps, NodeSummary, PlanRow } from './interfaces'
+import { SummaryTableProps } from './interfaces'
+import {PlanService} from './parser'
 
 export {
   SummaryTable,
-  Stats, SummaryTableProps, NodeSummary, PlanRow,
+  SummaryTableProps,
 }

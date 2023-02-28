@@ -1,0 +1,13 @@
+packages:
+  - path: "github.com/MatteoGioioso/postgres-explain/pkg"
+    output_path: "components/types.ts"
+    exclude_files:
+      - "utils.go"
+      - "summary.go"
+      - "plan_enricher.go"
+    type_mappings:
+      time.Time: "string /* RFC3339 */"
+      null.String: "null | string"
+      null.Bool: "null | boolean"
+      uuid.UUID: "string /* uuid */"
+      uuid.NullUUID: "null | string /* uuid */"
