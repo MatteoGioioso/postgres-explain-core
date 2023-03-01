@@ -111,6 +111,7 @@ export const FUNCTION_NAME = "Function Name";
 export const PEV_PLAN_TAG = "plan_";
 export const EstimateDirectionOver = "over";
 export const EstimateDirectionUnder = "under";
+export const EstimateDirectionNone = "none";
 export interface PlanProps {
   NODE_TYPE_PROP: string;
   ACTUAL_ROWS_PROP: string;
@@ -154,7 +155,14 @@ export interface PlanProps {
 // source: types.go
 
 export type Node = { [key: string]: any};
+/**
+ * StatsFromPlan Statistic can be found in different forms
+ */
 export interface StatsFromPlan {
+  plan: {
+    'Execution Time': number /* float64 */;
+    'Planning Time': number /* float64 */;
+  };
   'Execution Time': number /* float64 */;
   'Planning Time': number /* float64 */;
 }
@@ -177,6 +185,8 @@ export interface NodeSummary {
   relation: string;
 }
 export interface PlanRow {
+  node_id: string;
+  node_parent_id: string;
   level: number /* int */;
   node: NodeSummary;
   inclusive: number /* float64 */;

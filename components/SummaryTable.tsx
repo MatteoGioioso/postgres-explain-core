@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, ColumnLayout, Popover, SpaceBetween, Table, TableProps } from '@cloudscape-design/components'
+import { Box, Button, ColumnLayout, Popover, SpaceBetween, Table, TableProps } from '@cloudscape-design/components'
 import { PlanRow } from './types'
 import { SummaryTableProps } from './interfaces'
 
@@ -14,16 +14,16 @@ const betterNumbers = (num: number): string => {
     return `${Math.floor(num / ONE_MILLION)} Mil`
   }
 
-  if (num > THOUSAND) {
+  if (num >= THOUSAND) {
     return `${Math.floor(num / THOUSAND)} K`
   }
 
-  if (num <= THOUSAND && num >= HUNDRED) {
-    return `${Math.floor((num / THOUSAND) * 10) / 10} K`
+  if (num < THOUSAND && num >= HUNDRED) {
+    return `${Math.floor(num)}`
   }
 
   if (num <= HUNDRED && num >= TEN) {
-    return `${Math.floor((num / HUNDRED) * 100) / 100} K`
+    return `${Math.floor(num * 100) / 100}`
   }
 
   if (num <= TEN && num >= ONE) {
@@ -59,7 +59,6 @@ function getCellWarningColor(reference: number, total: number): string {
 
   return '#fff'
 }
-
 
 const GenericNumberDetailsPopover = (props: { name: string, number: number, children: string }) => {
   return (
@@ -127,13 +126,33 @@ const explainerColumns: Array<TableProps.ColumnDefinition<PlanRow>> = [
   },
   {
     id: 'rows_x',
-    header: 'Rows estimate factor',
+    header: (
+      <>
+        Rows E
+        <Popover
+          dismissAriaLabel="Close"
+          header={"Rows ES"}
+          content={"Rows estimate factor"}
+          triggerType="custom"
+          dismissButton={false}
+          position="top"
+        >
+          <Button iconName="status-info" variant="icon"/>
+        </Popover>
+      </>
+
+    ),
     cell: (e) => (
       <>
         {getRowEstimateDirectionSymbol(e.rows_x.direction) + " "}
         <GenericNumberDetailsPopover number={e.rows_x.value} name="Rows estimate factor">{betterNumbers(e.rows_x.value)}</GenericNumberDetailsPopover>
       </>
     ),
+  },
+  {
+    id: 'loops',
+    header: 'Loops',
+    cell: (e) => <GenericNumberDetailsPopover name={"Loops"} number={e.loops}>{betterNumbers(e.loops)}</GenericNumberDetailsPopover>
   },
   {
     id: 'node',
@@ -167,11 +186,11 @@ export const SummaryTable = ({ summary, stats }: SummaryTableProps) => {
       columnDefinitions={explainerColumns}
       variant="embedded"
       footer={
-        <Box textAlign="center">
-          <div>Planning time
-            time: {stats.planning_time}</div>
-          <div>Total Execution
-            time: <b>{stats.execution_time}</b></div>
+        <Box textAlign="left">
+          <h3>Planning time
+            time: {stats.planning_time} ms</h3>
+          <h2>Execution
+            time: <b>{stats.execution_time} ms</b></h2>
         </Box>
       }
     />
