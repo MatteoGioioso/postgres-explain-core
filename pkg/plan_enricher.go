@@ -3,6 +3,7 @@ package pkg
 // https://github.com/dalibo/pev2/blob/652bbc9041fde4f1df7df03e2500c2beaea5c3f5/src/services/plan-service.ts#L108
 
 import (
+	"math"
 	"strings"
 )
 
@@ -29,31 +30,41 @@ func (ps *PlanEnricher) AnalyzePlan(rootNode Node) {
 	ps.findOutlierNodes(rootNode)
 }
 
-func (ps *PlanEnricher) isCTE(node Node) bool {
+func IsCTE(node Node) bool {
 	return node[PARENT_RELATIONSHIP] == "InitPlan" && strings.HasPrefix(node[SUBPLAN_NAME].(string), "CTE")
 }
 
 func (ps *PlanEnricher) processNode(node Node) {
 	ps.calculatePlannerEstimate(node)
 
-	for key, value := range node {
-		ps.calculateMaximums(node, key, value)
+	// Iterate over all the node's properties: "Startup Cost", "Planning Time", "Plans", ect...
+	for name, value := range node {
+		ps.calculateMaximums(node, name, value)
 
-		if key == PLANS_PROP {
-			for _, value := range value.([]interface{}) {
-				if !ps.isCTE(node) {
+		// If the key is "Plans", then iterated over all the sub nodes
+		if name == PLANS_PROP {
+			for _, subNode := range value.([]interface{}) {
+				sn := subNode.(Node)
 
+				if !IsCTE(sn) && sn[PARENT_RELATIONSHIP] != "InitPlan" && sn[PARENT_RELATIONSHIP] != "SubPlan" {
+					if sn[WORKERS_PLANNED] != nil {
+						sn[WORKERS_PLANNED_BY_GATHER] = sn[WORKERS_PLANNED]
+					} else {
+						sn[WORKERS_PLANNED_BY_GATHER] = sn[WORKERS_PLANNED_BY_GATHER]
+					}
 				}
-				if ps.isCTE(node) {
 
-				}
-
-				ps.processNode(value.(Node))
+				ps.processNode(sn)
 			}
 		}
 	}
 
+	//if isCTE(node) {
+	//	delete(node, CTE_NAME)
+	//}
+
 	ps.calculateActuals(node)
+	ps.calculateExclusive(node)
 }
 
 func (ps *PlanEnricher) calculateMaximums(node Node, key string, value interface{}) {
@@ -120,28 +131,68 @@ func (ps *PlanEnricher) calculatePlannerEstimate(node Node) {
 		node[PLANNER_ESTIMATE_DIRECTION] = EstimateDirectionNone
 		node[PLANNER_ESTIMATE_FACTOR] = float64(0)
 	}
+
+	// There is the possibility that the calculation of PLANNER_ESTIMATE_FACTOR will yield Inf or NaN:
+	//  var zero interface{}
+	//	zero = 0.0
+	//	inf := 1 / zero.(float64)
+	// This will be equal to +Inf
+	if math.IsInf(node[PLANNER_ESTIMATE_FACTOR].(float64), 0) {
+		node[PLANNER_ESTIMATE_FACTOR] = float64(0)
+		return
+	}
+	if math.IsNaN(node[PLANNER_ESTIMATE_FACTOR].(float64)) {
+		node[PLANNER_ESTIMATE_FACTOR] = float64(0)
+	}
 }
 
 func (ps *PlanEnricher) calculateActuals(node Node) {
+	if node[ACTUAL_TOTAL_TIME_PROP] != nil {
+		// since time is reported for an individual loop, actual duration must be adjusted by number of loops
+		// number of workers is also taken into account
+		workers := 1.0
+		if node[WORKERS_PLANNED_BY_GATHER] != nil {
+			workers = node[WORKERS_PLANNED_BY_GATHER].(float64) + 1.0
+		}
+		node[ACTUAL_TOTAL_TIME_PROP] = (node[ACTUAL_TOTAL_TIME_PROP].(float64) * node[ACTUAL_LOOPS_PROP].(float64)) / workers
+		if node[ACTUAL_STARTUP_TIME_PROP] != nil {
+			node[ACTUAL_STARTUP_TIME_PROP] = (node[ACTUAL_STARTUP_TIME_PROP].(float64) * node[ACTUAL_LOOPS_PROP].(float64)) / workers
+		} else {
+			node[ACTUAL_STARTUP_TIME_PROP] = 0.0
+		}
+		node[EXCLUSIVE_DURATION] = node[ACTUAL_TOTAL_TIME_PROP]
+
+		duration := (node[EXCLUSIVE_DURATION].(float64)) - ps.childrenDuration(node, 0)
+		if duration > 0 {
+			node[EXCLUSIVE_DURATION] = duration
+		} else {
+			node[EXCLUSIVE_DURATION] = 0.0
+		}
+	}
 	node[ACTUAL_DURATION_PROP] = node[ACTUAL_TOTAL_TIME_PROP]
 	node[ACTUAL_COST_PROP] = node[TOTAL_COST_PROP]
+}
 
-	if node["Plans"] == nil {
-		return
+func (ps *PlanEnricher) calculateExclusive(node Node) {
+
+}
+
+func (ps *PlanEnricher) childrenDuration(node Node, duration float64) float64 {
+	if node[PLANS_PROP] == nil {
+		return duration
 	}
-	plans := node["Plans"].([]interface{})
 
-	for _, subPlan := range plans {
-		sp := subPlan.(Node)
-		if sp[NODE_TYPE_PROP].(string) != CTE_SCAN_PROP {
-			node[ACTUAL_DURATION_PROP] = node[ACTUAL_DURATION_PROP].(float64) - sp[ACTUAL_TOTAL_TIME_PROP].(float64)
-			node[ACTUAL_COST_PROP] = node[ACTUAL_COST_PROP].(float64) - sp[TOTAL_COST_PROP].(float64)
+	for _, subNode := range node[PLANS_PROP].([]interface{}) {
+		sn := subNode.(Node)
+		if sn[PARENT_RELATIONSHIP] != "InitPlan" {
+			if sn[EXCLUSIVE_DURATION] == nil {
+				duration += 0.0
+			} else {
+				duration += sn[EXCLUSIVE_DURATION].(float64)
+			}
+			duration = ps.childrenDuration(sn, duration)
 		}
 	}
 
-	if node[ACTUAL_COST_PROP].(float64) < 0 {
-		node[ACTUAL_COST_PROP] = 0
-	}
-
-	node[ACTUAL_DURATION_PROP] = node[ACTUAL_DURATION_PROP].(float64) * node[ACTUAL_LOOPS_PROP].(float64)
+	return duration
 }

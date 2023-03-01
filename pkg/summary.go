@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 )
 
 type Summary struct {
@@ -14,20 +15,23 @@ func NewSummary() *Summary {
 	}
 }
 
-func (s *Summary) Do(node Node, stats StatsFromPlan) []PlanRow {
-	s.recurseNode(node, stats, 0)
+func (s *Summary) Do(node Node, stats Stats) []PlanRow {
+	s.recurseNode(node, stats, 0, "")
 
 	return s.planTable
 }
 
-func (s *Summary) recurseNode(node Node, stats StatsFromPlan, level int) {
+func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string) {
+	id := uuid.New().String()
 	s.planTable = append(s.planTable, PlanRow{
-		Level:     level,
-		Node:      s.getNode(node, level),
-		Inclusive: node[ACTUAL_TOTAL_TIME_PROP].(float64),
-		Loops:     node[ACTUAL_LOOPS_PROP].(float64),
-		Rows:      node[ACTUAL_ROWS_PROP].(float64),
-		Exclusive: node[ACTUAL_DURATION_PROP].(float64),
+		NodeId:       id,
+		NodeParentId: parentId,
+		Level:        level,
+		Node:         s.getNode(node, level),
+		Inclusive:    node[ACTUAL_TOTAL_TIME_PROP].(float64),
+		Loops:        node[ACTUAL_LOOPS_PROP].(float64),
+		Rows:         node[ACTUAL_ROWS_PROP].(float64),
+		Exclusive:    node[EXCLUSIVE_DURATION].(float64),
 		Rows_x: EstimateFactor{
 			Value:     node[PLANNER_ESTIMATE_FACTOR].(float64),
 			Direction: node[PLANNER_ESTIMATE_DIRECTION].(string),
@@ -37,7 +41,7 @@ func (s *Summary) recurseNode(node Node, stats StatsFromPlan, level int) {
 
 	if node[PLANS_PROP] != nil {
 		for _, subNode := range node[PLANS_PROP].([]interface{}) {
-			s.recurseNode(subNode.(Node), stats, level+1)
+			s.recurseNode(subNode.(Node), stats, level+1, id)
 		}
 	}
 }
@@ -64,14 +68,14 @@ func (s *Summary) getNode(node Node, level int) NodeSummary {
 		Relation:  rel,
 		Level:     level,
 		Costs: fmt.Sprintf(
-			"(cost=%v...%v rows=%v width=%v) (actual time=cost=%v...%v rows=%v loops=%v)",
+			"(cost=%v...%v rows=%v width=%v) (actual time=%v...%v rows=%v loops=%v)",
 			costsVals...,
 		),
 		Buffers: fmt.Sprintf(
 			"Buffers shared hits: %v, read: %v, written: %v",
-			node["Shared Hit Blocks"],
-			node["Shared Read Blocks"],
-			node["Shared Written Blocks"],
+			node[SHARED_HIT_BLOCKS],
+			node[SHARED_READ_BLOCKS],
+			node[SHARED_WRITTEN_BLOCKS],
 		),
 	}
 }

@@ -2,7 +2,12 @@ package pkg
 
 type Node = map[string]interface{}
 
+// StatsFromPlan Statistic can be found in different forms
 type StatsFromPlan struct {
+	Plan struct {
+		ExecutionTime float64 `json:"Execution Time"`
+		PlanningTime  float64 `json:"Planning Time"`
+	} `json:"plan"`
 	ExecutionTime float64 `json:"Execution Time"`
 	PlanningTime  float64 `json:"Planning Time"`
 }
@@ -30,6 +35,8 @@ type NodeSummary struct {
 }
 
 type PlanRow struct {
+	NodeId        string         `json:"node_id"`
+	NodeParentId  string         `json:"node_parent_id"`
 	Level         int            `json:"level"`
 	Node          NodeSummary    `json:"node"`
 	Inclusive     float64        `json:"inclusive"`
