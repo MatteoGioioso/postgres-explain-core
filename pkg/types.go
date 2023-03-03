@@ -32,24 +32,32 @@ type NodeSummary struct {
 	Costs     string `json:"costs"`
 	Buffers   string `json:"buffers"`
 	Relation  string `json:"relation"`
+	Filters   string `json:"filters"`
+}
+
+type Rows struct {
+	Total               float64 `json:"total"`
+	Removed             float64 `json:"removed"`
+	Filters             string  `json:"filters"`
+	EstimationFactor    float64 `json:"estimation_factor"`
+	EstimationDirection string  `json:"estimation_direction"`
+}
+
+type Buffers struct {
+	Reads   float64 `json:"reads"`
+	Written float64 `json:"written"`
+	Hits    float64 `json:"hits"`
 }
 
 type PlanRow struct {
-	NodeId        string         `json:"node_id"`
-	NodeParentId  string         `json:"node_parent_id"`
-	Level         int            `json:"level"`
-	Node          NodeSummary    `json:"node"`
-	Inclusive     float64        `json:"inclusive"`
-	Loops         float64        `json:"loops"`
-	Rows          float64        `json:"rows"`
-	Exclusive     float64        `json:"exclusive"`
-	Rows_x        EstimateFactor `json:"rows_x"`
-	ExecutionTime float64        `json:"execution_time"`
-	Reads         float64        `json:"reads"`
-	Written       float64        `json:"written"`
-}
-
-type EstimateFactor struct {
-	Value     float64 `json:"value"`
-	Direction string  `json:"direction"`
+	NodeId        string      `json:"node_id"`
+	NodeParentId  string      `json:"node_parent_id"`
+	Level         int         `json:"level"`
+	Node          NodeSummary `json:"node"`
+	Inclusive     float64     `json:"inclusive"`
+	Loops         float64     `json:"loops"`
+	Rows          Rows        `json:"rows"`
+	Exclusive     float64     `json:"exclusive"`
+	ExecutionTime float64     `json:"execution_time"`
+	Buffers       Buffers     `json:"buffers"`
 }

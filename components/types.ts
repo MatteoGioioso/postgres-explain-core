@@ -88,8 +88,9 @@ export const EXCLUSIVE_DURATION = "*Duration (exclusive)";
 export const EXCLUSIVE_COST = "*Cost (exclusive)";
 export const ACTUAL_ROWS_REVISED = "*Actual Rows Revised";
 export const PLAN_ROWS_REVISED = "*Plan Rows Revised";
-export const ROWS_REMOVED_BY_FILTER_REVISED = "*Rows Removed by Filter";
-export const ROWS_REMOVED_BY_JOIN_FILTER_REVISED = "*Rows Removed by Join Filter";
+export const ROWS_REMOVED_BY_FILTER = "Rows Removed by Filter";
+export const ROWS_REMOVED_BY_JOIN_FILTER = "Rows Removed by Join Filter";
+export const FILTER = "Filter";
 export const EXCLUSIVE_SHARED_HIT_BLOCKS = "*Shared Hit Blocks (exclusive)";
 export const EXCLUSIVE_SHARED_READ_BLOCKS = "*Shared Read Blocks (exclusive)";
 export const EXCLUSIVE_SHARED_DIRTIED_BLOCKS = "*Shared Dirtied Blocks (exclusive)";
@@ -183,6 +184,14 @@ export interface NodeSummary {
   costs: string;
   buffers: string;
   relation: string;
+  filters: string;
+}
+export interface Rows {
+  total: number /* float64 */;
+  removed: number /* float64 */;
+  filters: string;
+  estimation_factor: number /* float64 */;
+  estimation_direction: string;
 }
 export interface PlanRow {
   node_id: string;
@@ -191,14 +200,9 @@ export interface PlanRow {
   node: NodeSummary;
   inclusive: number /* float64 */;
   loops: number /* float64 */;
-  rows: number /* float64 */;
+  rows: Rows;
   exclusive: number /* float64 */;
-  rows_x: EstimateFactor;
   execution_time: number /* float64 */;
   reads: number /* float64 */;
   written: number /* float64 */;
-}
-export interface EstimateFactor {
-  value: number /* float64 */;
-  direction: string;
 }

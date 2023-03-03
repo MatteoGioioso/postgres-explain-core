@@ -30,11 +30,13 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 		Node:         s.getNode(node, level),
 		Inclusive:    node[ACTUAL_TOTAL_TIME_PROP].(float64),
 		Loops:        node[ACTUAL_LOOPS_PROP].(float64),
-		Rows:         node[ACTUAL_ROWS_PROP].(float64),
 		Exclusive:    node[EXCLUSIVE_DURATION].(float64),
-		Rows_x: EstimateFactor{
-			Value:     node[PLANNER_ESTIMATE_FACTOR].(float64),
-			Direction: node[PLANNER_ESTIMATE_DIRECTION].(string),
+		Rows: Rows{
+			Total:               node[ACTUAL_ROWS_PROP].(float64),
+			Removed:             node[ROWS_REMOVED_BY_FILTER].(float64),
+			Filters:             node[FILTER].(string),
+			EstimationFactor:    node[PLANNER_ESTIMATE_FACTOR].(float64),
+			EstimationDirection: node[PLANNER_ESTIMATE_DIRECTION].(string),
 		},
 		ExecutionTime: stats.ExecutionTime,
 	})

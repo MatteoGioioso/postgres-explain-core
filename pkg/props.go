@@ -85,13 +85,14 @@ const (
 	PRESORTED_KEY         = "Presorted Key"
 
 	// computed by pev
-	NODE_ID                             = "nodeId"
-	EXCLUSIVE_DURATION                  = "*Duration (exclusive)"
-	EXCLUSIVE_COST                      = "*Cost (exclusive)"
-	ACTUAL_ROWS_REVISED                 = "*Actual Rows Revised"
-	PLAN_ROWS_REVISED                   = "*Plan Rows Revised"
-	ROWS_REMOVED_BY_FILTER_REVISED      = "*Rows Removed by Filter"
-	ROWS_REMOVED_BY_JOIN_FILTER_REVISED = "*Rows Removed by Join Filter"
+	NODE_ID                     = "nodeId"
+	EXCLUSIVE_DURATION          = "*Duration (exclusive)"
+	EXCLUSIVE_COST              = "*Cost (exclusive)"
+	ACTUAL_ROWS_REVISED         = "*Actual Rows Revised"
+	PLAN_ROWS_REVISED           = "*Plan Rows Revised"
+	ROWS_REMOVED_BY_FILTER      = "Rows Removed by Filter"
+	ROWS_REMOVED_BY_JOIN_FILTER = "Rows Removed by Join Filter"
+	FILTER                      = "Filter"
 
 	EXCLUSIVE_SHARED_HIT_BLOCKS     = "*Shared Hit Blocks (exclusive)"
 	EXCLUSIVE_SHARED_READ_BLOCKS    = "*Shared Read Blocks (exclusive)"

@@ -171,6 +171,28 @@ func (ps *PlanEnricher) calculateActuals(node Node) {
 	}
 	node[ACTUAL_DURATION_PROP] = node[ACTUAL_TOTAL_TIME_PROP]
 	node[ACTUAL_COST_PROP] = node[TOTAL_COST_PROP]
+
+	if node[FILTER] == nil {
+		node[FILTER] = ""
+	}
+
+	for _, name := range []string{
+		ACTUAL_ROWS_PROP,
+		PLAN_ROWS_PROP,
+		ROWS_REMOVED_BY_FILTER,
+		ROWS_REMOVED_BY_JOIN_FILTER,
+	} {
+		if node[name] != nil {
+			loops := 1.0
+			if node[ACTUAL_LOOPS_PROP] != nil {
+				loops = node[ACTUAL_LOOPS_PROP].(float64)
+			}
+
+			node[name] = node[name].(float64) * loops
+		} else {
+			node[name] = 0.0
+		}
+	}
 }
 
 func (ps *PlanEnricher) calculateExclusive(node Node) {

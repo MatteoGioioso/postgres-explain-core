@@ -2,6 +2,8 @@ import React from 'react'
 import { Box, Button, ColumnLayout, Popover, SpaceBetween, Table, TableProps } from '@cloudscape-design/components'
 import { PlanRow } from './types'
 import { SummaryTableProps } from './interfaces'
+// @ts-ignore
+import Highlight from 'react-highlight'
 
 const betterNumbers = (num: number): string => {
   const ONE_MILLION = 1000000
@@ -60,15 +62,16 @@ function getCellWarningColor(reference: number, total: number): string {
   return '#fff'
 }
 
-const GenericNumberDetailsPopover = (props: { name: string, number: number, children: string }) => {
+const GenericDetailsPopover = (props: { name: string, content: any, children: string }) => {
   return (
     <Popover
       dismissAriaLabel="Close"
       header={props.name}
-      content={props.number}
+      content={props.content}
       triggerType="custom"
       dismissButton={false}
       position="top"
+      size="large"
     >
       {props.children}
     </Popover>
@@ -111,18 +114,45 @@ const ComparatorCell = ({ prop, totalProp, name }: { prop: number, totalProp: nu
 const explainerColumns: Array<TableProps.ColumnDefinition<PlanRow>> = [
   {
     id: 'exclusive',
-    header: 'Exclusive',
+    header: 'Time',
     cell: (e) => <ComparatorCell prop={e.exclusive} totalProp={e.execution_time} name={'Exclusive time'}/>,
   },
   {
     id: 'inclusive',
-    header: 'Inclusive',
+    header: 'Cumulative Time',
     cell: (e) => <ComparatorCell prop={e.inclusive} totalProp={e.execution_time} name={'Inclusive time'}/>,
   },
   {
     id: 'rows',
     header: 'Rows',
-    cell: (e) => <GenericNumberDetailsPopover number={e.rows} name="Rows">{betterNumbers(e.rows)}</GenericNumberDetailsPopover>,
+    cell: (e) => <GenericDetailsPopover content={e.rows.total}
+                                        name="Rows">{betterNumbers(e.rows.total)}</GenericDetailsPopover>,
+  },
+  {
+    id: 'rows-removed',
+    header: 'Rows Removed',
+    cell: (e) => (
+      <>
+        {
+          e.rows.filters && (
+            <>
+              - {' '}
+              <GenericDetailsPopover
+                content={
+                  <div>
+                    <p>Filters: <Highlight>{e.rows.filters}</Highlight></p>
+                    <p>Removed: {e.rows.removed}</p>
+                  </div>
+                }
+                name="Rows removed by a filter"
+              >
+                {betterNumbers(e.rows.removed)}
+              </GenericDetailsPopover>
+            </>
+          )
+        }
+      </>
+    ),
   },
   {
     id: 'rows_x',
@@ -131,8 +161,8 @@ const explainerColumns: Array<TableProps.ColumnDefinition<PlanRow>> = [
         Rows E
         <Popover
           dismissAriaLabel="Close"
-          header={"Rows ES"}
-          content={"Rows estimate factor"}
+          header={'Rows ES'}
+          content={'Rows estimate factor'}
           triggerType="custom"
           dismissButton={false}
           position="top"
@@ -144,15 +174,17 @@ const explainerColumns: Array<TableProps.ColumnDefinition<PlanRow>> = [
     ),
     cell: (e) => (
       <>
-        {getRowEstimateDirectionSymbol(e.rows_x.direction) + " "}
-        <GenericNumberDetailsPopover number={e.rows_x.value} name="Rows estimate factor">{betterNumbers(e.rows_x.value)}</GenericNumberDetailsPopover>
+        {getRowEstimateDirectionSymbol(e.rows.estimation_direction) + ' '}
+        <GenericDetailsPopover content={e.rows.estimation_factor}
+                               name="Rows estimate factor">{betterNumbers(e.rows.estimation_factor)}</GenericDetailsPopover>
       </>
     ),
   },
   {
     id: 'loops',
     header: 'Loops',
-    cell: (e) => <GenericNumberDetailsPopover name={"Loops"} number={e.loops}>{betterNumbers(e.loops)}</GenericNumberDetailsPopover>
+    cell: (e) => <GenericDetailsPopover name={'Loops'}
+                                        content={e.loops}>{betterNumbers(e.loops)}</GenericDetailsPopover>,
   },
   {
     id: 'node',
