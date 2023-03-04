@@ -1,53 +1,67 @@
-import React from 'react'
-// @ts-ignore
+import React, { useMemo, useEffect } from 'react'
+import ReactFlow, { Controls, Edge, Node, Position, useEdgesState, useNodesState } from 'reactflow'
 import { SummaryTableProps } from './interfaces'
-import createEngine, {
-  DefaultLinkModel,
-  DefaultNodeModel,
-  DefaultPortModel,
-  DiagramModel,
-} from '@projectstorm/react-diagrams'
-
-import { CanvasWidget } from '@projectstorm/react-canvas-core'
 import { PlanRow } from './types'
+import 'reactflow/dist/style.css'
+import { NodeWidget } from './diagram/NodeWidget'
 
 export const SummaryDiagram = ({ summary, stats }: SummaryTableProps) => {
-  const engine = createEngine()
-  const model = new DiagramModel()
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const nodeTypes = useMemo(() => ({ special: NodeWidget }), []);
 
-  const nodesMap: { [key: string]: DefaultPortModel } = {}
+  const calculateNodes = () => {
+    const initialNodes = []
+    const initialEdges = []
+    for (let i = 0; i < summary.length; i++) {
+      const row: PlanRow = summary[i]
+      const node: Node = {
+        id: row.node_id,
+        position: { x: 350 * (summary.length - i), y: 150 * (row.level + 1) },
+        data: {
+          label: `${row.node.operation} on ${row.node.relation}`,
+        },
+        targetPosition: Position.Left,
+        sourcePosition: Position.Right,
+        type: 'special',
+        draggable: true
+      }
 
-  for (let i = 0; i < summary.length; i++) {
-    const row: PlanRow = summary[i]
-    const node = new DefaultNodeModel({
-      name: `${row.node.operation} on ${row.node.relation}`,
-      color: 'rgb(0,192,255)',
-    })
-    node.setPosition(100 * i+1, 100)
-    model.addNode(node)
+      const edge: Edge = {
+        id: `${row.node_id}-${row.node_parent_id}`,
+        source: row.node_id,
+        target: row.node_parent_id,
+        // TODO: change stroke based on the amount of time or rows
+        // style: { strokeWidth: row.rows.total /100 },
+      }
 
-    nodesMap[row.node_id] = node.addOutPort('Out')
-  }
+      initialNodes.push(node)
+      initialEdges.push(edge)
+    }
 
-  for (let i = 0; i < summary.length; i++) {
-    const row: PlanRow = summary[i]
-    if (nodesMap[row.node_parent_id]) {
-
-      const link =  nodesMap[row.node_id].link<DefaultLinkModel>(nodesMap[row.node_parent_id])
-      model.addLink(link)
+    return {
+      initialNodes, initialEdges
     }
   }
 
-  engine.setModel(model)
+  useEffect(() => {
+    const {initialNodes, initialEdges} = calculateNodes()
+    setNodes(initialNodes);
+    setEdges(initialEdges);
+  }, []);
 
   return (
-    <div className="summary-diagram-container" style={{
-      fontFamily: 'sans-serif',
-      textAlign: 'center',
-      height: 'calc(100vh - 100px)',
-      width: '90%',
-    }}>
-      <CanvasWidget className="summary-diagram-canvas" engine={engine}/>
+    <div style={{ height: '800px' }}>
+      <ReactFlow
+        fitView
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        nodeTypes={nodeTypes}
+      >
+        <Controls/>
+      </ReactFlow>
     </div>
   )
 }
