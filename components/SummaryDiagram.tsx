@@ -4,7 +4,6 @@ import { SummaryTableProps } from './interfaces'
 import { PlanRow } from './types'
 import 'reactflow/dist/style.css'
 import { NodeWidget } from './diagram/NodeWidget'
-import { Box } from '@cloudscape-design/components'
 import { EdgeWidget } from './diagram/EdgeWidget'
 
 export const SummaryDiagram = ({ summary, stats }: SummaryTableProps) => {
@@ -34,7 +33,7 @@ export const SummaryDiagram = ({ summary, stats }: SummaryTableProps) => {
         id: `${row.node_id}-${row.node_parent_id}`,
         source: row.node_id,
         target: row.node_parent_id,
-        // TODO: change stroke based on the amount of time or rows
+        // TODO: change stroke based on the amount of rows
         // style: { strokeWidth: row.rows.total /100 },
         data: {
           rows: row.rows.total

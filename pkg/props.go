@@ -110,9 +110,14 @@ const (
 
 	WORKERS_PLANNED_BY_GATHER = "*Workers Planned By Gather"
 
-	CTE_SCAN      = "CTE Scan"
-	CTE_NAME      = "CTE Name"
-	FUNCTION_NAME = "Function Name"
+	CTE_SCAN = "CTE Scan"
+	CTE_NAME = "CTE Name"
+
+	CTES = "CTEs"
+
+	IS_CTE_ROOT    = "*Is CTE Root"
+	CTE_SUBPLAN_OF = "*CTE Subplan Of"
+	FUNCTION_NAME  = "Function Name"
 
 	PEV_PLAN_TAG = "plan_"
 

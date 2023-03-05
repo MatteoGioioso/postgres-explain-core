@@ -11,6 +11,7 @@ type PlanEnricher struct {
 	maxRows     float64
 	maxCost     float64
 	maxDuration float64
+	ctes        map[string]Node
 }
 
 func NewPlanEnricher() *PlanEnricher {
@@ -18,6 +19,7 @@ func NewPlanEnricher() *PlanEnricher {
 		maxRows:     0,
 		maxCost:     0,
 		maxDuration: 0,
+		ctes:        map[string]Node{},
 	}
 }
 
@@ -28,6 +30,7 @@ func (ps *PlanEnricher) AnalyzePlan(rootNode Node) {
 	rootNode[MAXIMUM_DURATION_PROP] = ps.maxDuration
 
 	ps.findOutlierNodes(rootNode)
+	rootNode[CTES] = ps.ctes
 }
 
 func IsCTE(node Node) bool {
@@ -54,14 +57,19 @@ func (ps *PlanEnricher) processNode(node Node) {
 					}
 				}
 
+				if IsCTE(sn) {
+					subPlanName := strings.ReplaceAll(sn[SUBPLAN_NAME].(string), "CTE ", "")
+					sn[IS_CTE_ROOT] = "true"
+					sn[CTE_SUBPLAN_OF] = subPlanName
+					ps.ctes[subPlanName] = sn
+				} else {
+					sn[CTE_SUBPLAN_OF] = node[CTE_SUBPLAN_OF]
+				}
+
 				ps.processNode(sn)
 			}
 		}
 	}
-
-	//if isCTE(node) {
-	//	delete(node, CTE_NAME)
-	//}
 
 	ps.calculateActuals(node)
 	ps.calculateExclusive(node)

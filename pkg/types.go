@@ -61,6 +61,7 @@ type PlanRow struct {
 	Exclusive     float64     `json:"exclusive"`
 	ExecutionTime float64     `json:"execution_time"`
 	Buffers       Buffers     `json:"buffers"`
+	SubPlanOf     string      `json:"sub_plan_of"`
 }
 
 type Operation struct {

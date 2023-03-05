@@ -108,6 +108,9 @@ export const AVERAGE_IO_WRITE_TIME = "*I/O Write Speed (exclusive)";
 export const WORKERS_PLANNED_BY_GATHER = "*Workers Planned By Gather";
 export const CTE_SCAN = "CTE Scan";
 export const CTE_NAME = "CTE Name";
+export const CTES = "CTEs";
+export const IS_CTE_ROOT = "*Is CTE Root";
+export const CTE_SUBPLAN_OF = "*CTE Subplan Of";
 export const FUNCTION_NAME = "Function Name";
 export const PEV_PLAN_TAG = "plan_";
 export const EstimateDirectionOver = "over";
@@ -180,6 +183,7 @@ export interface PlanRow {
   exclusive: number /* float64 */;
   execution_time: number /* float64 */;
   buffers: Buffers;
+  sub_plan_of: string;
 }
 export interface Operation {
   scope: string;

@@ -6,25 +6,38 @@ import (
 	"github.com/google/uuid"
 )
 
+type cte struct {
+	id    string
+	level int
+}
+
 type Summary struct {
 	planTable []PlanRow
+	ctes      map[string]cte
 }
 
 func NewSummary() *Summary {
 	return &Summary{
 		planTable: make([]PlanRow, 0),
+		ctes:      map[string]cte{},
 	}
 }
 
 func (s *Summary) Do(node Node, stats Stats) []PlanRow {
 	s.recurseNode(node, stats, 0, "")
-
+	s.recurseCTEsNodes(node[CTES].(map[string]Node), stats)
 	return s.planTable
 }
 
 func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string) {
+	// CTE will be recurse in a second moment in the recurseCTEsNodes method
+	if node[IS_CTE_ROOT] == "true" {
+		return
+	}
+
 	id := uuid.New().String()
-	s.planTable = append(s.planTable, PlanRow{
+
+	row := PlanRow{
 		NodeId:       id,
 		NodeParentId: parentId,
 		Level:        level,
@@ -40,7 +53,22 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 			EstimationDirection: node[PLANNER_ESTIMATE_DIRECTION].(string),
 		},
 		ExecutionTime: stats.ExecutionTime,
-	})
+	}
+
+	if node[CTE_SUBPLAN_OF] != nil {
+		row.SubPlanOf = node[CTE_SUBPLAN_OF].(string)
+	}
+
+	s.planTable = append(s.planTable, row)
+
+	// If the node is a CTE assign it to the CTEs map, the map will later be used to get the parentId in case the node
+	// is part of a CTE
+	if node[NODE_TYPE_PROP].(string) == CTE_SCAN {
+		s.ctes[node[CTE_NAME].(string)] = cte{
+			id:    id,
+			level: level,
+		}
+	}
 
 	if node[PLANS_PROP] != nil {
 		for _, subNode := range node[PLANS_PROP].([]interface{}) {
@@ -95,9 +123,6 @@ var operationsMap = map[string]Operation{
 	SORT: {
 		Scope: SORT_KEY,
 	},
-	//HASH: {
-	//	Scope: "Buckets",
-	//},
 }
 
 func (s *Summary) GetOperationScope(op string, node Node) string {
@@ -105,7 +130,7 @@ func (s *Summary) GetOperationScope(op string, node Node) string {
 		switch r := node[operation.Scope].(type) {
 		case string:
 			return r
-		case []interface{}:
+		case []interface{}: // When Sorting we can have an array of sorting keys
 			marshal, err := json.MarshalIndent(r, "", "    ")
 			if err != nil {
 				panic(fmt.Errorf("could not marshal node operation scope into []string: %v", err))
@@ -115,4 +140,12 @@ func (s *Summary) GetOperationScope(op string, node Node) string {
 	}
 
 	return "-"
+}
+
+func (s *Summary) recurseCTEsNodes(ctesNodes map[string]Node, stats Stats) {
+	for cteName, node := range ctesNodes {
+		cte := s.ctes[cteName]
+		delete(node, IS_CTE_ROOT)
+		s.recurseNode(node, stats, cte.level+1, cte.id)
+	}
 }
