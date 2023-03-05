@@ -28,6 +28,7 @@ type Explained struct {
 
 type NodeSummary struct {
 	Operation string `json:"operation"`
+	Scope     string `json:"scope"`
 	Level     int    `json:"level"`
 	Costs     string `json:"costs"`
 	Buffers   string `json:"buffers"`
@@ -60,4 +61,8 @@ type PlanRow struct {
 	Exclusive     float64     `json:"exclusive"`
 	ExecutionTime float64     `json:"execution_time"`
 	Buffers       Buffers     `json:"buffers"`
+}
+
+type Operation struct {
+	Scope string `json:"scope"`
 }

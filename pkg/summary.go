@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
 )
@@ -65,8 +66,10 @@ func (s *Summary) getNode(node Node, level int) NodeSummary {
 		rel = node[RELATION_NAME_PROP].(string)
 	}
 
+	operation := node[NODE_TYPE_PROP].(string)
 	return NodeSummary{
-		Operation: node[NODE_TYPE_PROP].(string),
+		Operation: operation,
+		Scope:     s.GetOperationScope(operation, node),
 		Relation:  rel,
 		Level:     level,
 		Costs: fmt.Sprintf(
@@ -80,4 +83,36 @@ func (s *Summary) getNode(node Node, level int) NodeSummary {
 			node[SHARED_WRITTEN_BLOCKS],
 		),
 	}
+}
+
+var operationsMap = map[string]Operation{
+	SEQUENTIAL_SCAN: {
+		Scope: RELATION_NAME,
+	},
+	HASH_JOIN: {
+		Scope: HASH_CONDITION_PROP,
+	},
+	SORT: {
+		Scope: SORT_KEY,
+	},
+	//HASH: {
+	//	Scope: "Buckets",
+	//},
+}
+
+func (s *Summary) GetOperationScope(op string, node Node) string {
+	if operation, ok := operationsMap[op]; ok {
+		switch r := node[operation.Scope].(type) {
+		case string:
+			return r
+		case []interface{}:
+			marshal, err := json.MarshalIndent(r, "", "    ")
+			if err != nil {
+				panic(fmt.Errorf("could not marshal node operation scope into []string: %v", err))
+			}
+			return string(marshal)
+		}
+	}
+
+	return "-"
 }

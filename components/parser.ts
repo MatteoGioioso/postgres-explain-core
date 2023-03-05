@@ -1045,25 +1045,83 @@ export function splitBalanced(input: string, split: string) {
 }
 
 
-console.log(new PlanService().fromSource(` Sort  (cost=291.79..293.15 rows=544 width=224) (actual time=60.754..60.760 rows=69 loops=1)
-   Sort Key: n.nspname, p.proname, (pg_get_function_arguments(p.oid))
-   Sort Method: quicksort  Memory: 38kB
-   Buffers: shared hit=97
-   ->  Hash Join  (cost=1.08..223.93 rows=544 width=224) (actual time=11.679..60.696 rows=69 loops=1)
-         Hash Cond: (p.pronamespace = n.oid)
-         Buffers: shared hit=97
-         ->  Seq Scan on pg_proc p  (cost=0.00..210.17 rows=1087 width=73) (actual time=0.067..59.669 rows=3320 loops=1)
-               Filter: pg_function_is_visible(oid)
-               Rows Removed by Filter: 12
-               Buffers: shared hit=96
-         ->  Hash  (cost=1.06..1.06 rows=2 width=68) (actual time=0.011..0.011 rows=2 loops=1)
-               Buckets: 1024  Batches: 1  Memory Usage: 9kB
-               Buffers: shared hit=1
-               ->  Seq Scan on pg_namespace n  (cost=0.00..1.06 rows=2 width=68) (actual time=0.004..0.006 rows=2 loops=1)
-                     Filter: ((nspname <> 'pg_catalog'::name) AND (nspname <> 'information_schema'::name))
-                     Rows Removed by Filter: 2
-                     Buffers: shared hit=1
+console.log(new PlanService().fromSource(` HashAggregate  (cost=37626.66..37700.16 rows=4900 width=176) (actual time=645.143..659.449 rows=32928 loops=1)
+   Output: r.room_id, r.room_code, (date_trunc('hour'::text, r.ts)), r.room_type, r.capacity_bucket, COALESCE(sum(pc.people_count), '0'::bigint), sum(r.capacity), count(*) FILTER (WHERE (bv.planned_size IS NOT NULL)), count(*), COALESCE(sum(pc.people_count) FILTER (WHERE (bv.planned_size IS NOT NULL)), '0'::bigint), COALESCE(sum(((bv.planned_size * r.capacity) / bv.total_capacity)), '0'::numeric), COALESCE(sum(r.capacity) FILTER (WHERE (bv.planned_size IS NOT NULL)), '0'::bigint)
+   Group Key: r.room_id, r.room_code, date_trunc('hour'::text, r.ts), r.room_type, r.capacity_bucket
+   Batches: 1  Memory Usage: 17937kB
+   Buffers: shared hit=425238 read=250
+   I/O Timings: read=2.263
+   CTE rooms_ts
+     ->  Nested Loop  (cost=0.01..1262.20 rows=49000 width=79) (actual time=0.282..41.094 rows=131712 loops=1)
+           Output: t.ts, r_1.id, r_1.room_type, r_1.code, r_1.capacity, ((floor(((r_1.capacity / 10))::double precision) * '10'::double precision))::bigint
+           Buffers: shared hit=18
+           ->  Function Scan on pg_catalog.generate_series t  (cost=0.01..10.01 rows=1000 width=8) (actual time=0.262..0.646 rows=2688 loops=1)
+                 Output: t.ts
+                 Function Call: generate_series('2023-02-03 00:00:00+00'::timestamp with time zone, ('2023-03-02 23:59:00'::timestamp without time zone)::timestamp with time zone, '00:15:00'::interval)
+           ->  Materialize  (cost=0.00..27.32 rows=49 width=63) (actual time=0.000..0.004 rows=49 loops=2688)
+                 Output: r_1.id, r_1.room_type, r_1.code, r_1.capacity
+                 Buffers: shared hit=18
+                 ->  Seq Scan on public_api.rooms r_1  (cost=0.00..27.08 rows=49 width=63) (actual time=0.014..0.142 rows=49 loops=1)
+                       Output: r_1.id, r_1.room_type, r_1.code, r_1.capacity
+                       Filter: (r_1.floor_id = 28)
+                       Rows Removed by Filter: 677
+                       Buffers: shared hit=18
+   CTE bookings_view
+     ->  Nested Loop  (cost=300.98..423.93 rows=124 width=60) (actual time=35.436..55.216 rows=5649 loops=1)
+           Output: bra.room_id, b.time_range, (max(b.planned_size)), (sum(r_2.capacity))
+           Buffers: shared hit=28528
+           ->  HashAggregate  (cost=300.69..301.94 rows=124 width=60) (actual time=35.414..38.407 rows=5649 loops=1)
+                 Output: b.id, b.time_range, max(b.planned_size), sum(r_2.capacity)
+                 Group Key: b.id
+                 Batches: 1  Memory Usage: 1249kB
+                 Buffers: shared hit=16310
+                 ->  Hash Join  (cost=269.63..299.76 rows=124 width=56) (actual time=24.184..26.732 rows=5649 loops=1)
+                       Output: b.id, b.time_range, b.planned_size, r_2.capacity
+                       Hash Cond: (r_2.id = bra_1.room_id)
+                       Buffers: shared hit=16310
+                       ->  Seq Scan on public_api.rooms r_2  (cost=0.00..25.26 rows=726 width=20) (actual time=0.004..0.237 rows=726 loops=1)
+                             Output: r_2.capacity, r_2.id
+                             Buffers: shared hit=18
+                       ->  Hash  (cost=268.08..268.08 rows=124 width=68) (actual time=24.162..24.164 rows=5649 loops=1)
+                             Output: b.id, b.time_range, b.planned_size, bra_1.room_id
+                             Buckets: 8192 (originally 1024)  Batches: 1 (originally 1)  Memory Usage: 572kB
+                             Buffers: shared hit=16292
+                             ->  Nested Loop  (cost=0.56..268.08 rows=124 width=68) (actual time=0.100..21.942 rows=5649 loops=1)
+                                   Output: b.id, b.time_range, b.planned_size, bra_1.room_id
+                                   Buffers: shared hit=16292
+                                   ->  Index Scan using bookings_time_range_idx on public_api.bookings b  (cost=0.28..126.02 rows=157 width=52) (actual time=0.055..4.115 rows=6772 loops=1)
+                                         Output: b.id, b.start_time, b.end_time, b.department_id, b.activity_type, b.planned_size, b.booking_id, b.time_range
+                                         Index Cond: (b.time_range && '["2023-02-03 00:00:00+00","2023-03-03 00:00:00+00")'::tstzrange)
+                                         Buffers: shared hit=1828
+   ->  Hash Left Join  (cost=4.46..34225.53 rows=49000 width=116) (actual time=61.755..568.305 rows=131712 loops=1)
+         Output: r.room_id, r.room_code, date_trunc('hour'::text, r.ts), r.room_type, r.capacity_bucket, pc.people_count, r.capacity, bv.planned_size, bv.total_capacity
+         Hash Cond: (r.room_id = bv.room_id)
+         Join Filter: (bv.time_range @> r.ts)
+         Rows Removed by Join Filter: 466498
+         Buffers: shared hit=425238 read=250
+         I/O Timings: read=2.263
+         ->  Nested Loop Left Join  (cost=0.43..33535.50 rows=49000 width=104) (actual time=0.349..387.626 rows=131712 loops=1)
+               Output: r.room_id, r.room_code, r.ts, r.room_type, r.capacity_bucket, r.capacity, pc.people_count
+               Inner Unique: true
+               Buffers: shared hit=396710 read=250
+               I/O Timings: read=2.263
+               ->  CTE Scan on rooms_ts r  (cost=0.00..980.00 rows=49000 width=100) (actual time=0.284..94.115 rows=131712 loops=1)
+                     Output: r.ts, r.room_id, r.room_type, r.room_code, r.capacity, r.capacity_bucket
+                     Buffers: shared hit=18
+               ->  Index Only Scan using wifi_rooms_count_idx on public_api.wifi_rooms pc  (cost=0.43..0.66 rows=1 width=28) (actual time=0.002..0.002 rows=0 loops=131712)
+                     Output: pc.room_id, pc.ts, pc.people_count
+                     Index Cond: ((pc.room_id = r.room_id) AND (pc.ts = r.ts))
+                     Heap Fetches: 1805
+                     Buffers: shared hit=396692 read=250
+                     I/O Timings: read=2.263
+         ->  Hash  (cost=2.48..2.48 rows=124 width=60) (actual time=61.390..61.391 rows=5649 loops=1)
+               Output: bv.planned_size, bv.total_capacity, bv.room_id, bv.time_range
+               Buckets: 8192 (originally 1024)  Batches: 1 (originally 1)  Memory Usage: 539kB
+               Buffers: shared hit=28528
+               ->  CTE Scan on bookings_view bv  (cost=0.00..2.48 rows=124 width=60) (actual time=35.440..58.752 rows=5649 loops=1)
+                     Output: bv.planned_size, bv.total_capacity, bv.room_id, bv.time_range
+                     Buffers: shared hit=28528
  Planning:
-   Buffers: shared hit=4
- Planning Time: 0.288 ms
- Execution Time: 60.802 ms`))
+   Buffers: shared hit=35
+ Planning Time: 0.989 ms
+ Execution Time: 662.466 ms`))

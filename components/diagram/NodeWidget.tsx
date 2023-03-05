@@ -1,9 +1,13 @@
 import React, { memo } from 'react'
 import { Handle, Position } from 'reactflow'
-import { Cards, Link } from '@cloudscape-design/components'
+import { Box } from '@cloudscape-design/components'
+import { PlanRow } from '../types'
+// @ts-ignore
+import Highlight from 'react-highlight'
+import { betterNumbers, getCellWarningColor } from '../utils'
 
 // @ts-ignore
-export const NodeWidget = memo(({ data, isConnectable }) => {
+export const NodeWidget = memo(({ data, isConnectable }: { data: PlanRow }) => {
   return (
     <>
       <Handle
@@ -11,45 +15,31 @@ export const NodeWidget = memo(({ data, isConnectable }) => {
         position={Position.Left}
         isConnectable={false}
       />
-      <Cards
-        cardDefinition={{
-          header: item => (
-            <Link fontSize="heading-m">{data.label}</Link>
-          ),
-          sections: [
-            {
-              id: 'description',
-              header: 'Description',
-              content: item => item.description,
-            },
-            {
-              id: 'type',
-              header: 'Type',
-              content: item => item.type,
-            },
-            {
-              id: 'size',
-              header: 'Size',
-              content: item => item.size,
-            },
-          ],
-        }}
-        cardsPerRow={[
-          { cards: 1 },
-          { minWidth: 500, cards: 2 },
-        ]}
-        items={[
-          {
-            name: 'Item 1',
-            alt: 'First',
-            description: 'This is the first item',
-            type: '1A',
-            size: 'Small',
-          },
 
-        ]}
-        loadingText="Loading resources"
-      />
+      <div style={{
+        border: '1px solid black',
+        borderRadius: '10px',
+        padding: "10px",
+      }}>
+        <Box variant="h2">
+          {data.node.operation}
+        </Box>
+        <Box variant="p">
+          <Highlight style={{padding: 0}}>
+            {data.node.scope}
+          </Highlight>
+        </Box>
+        <Box variant="p">
+          Time: {betterNumbers(data.exclusive)} ms
+        </Box>
+        <div
+          style={{
+            backgroundColor: getCellWarningColor(data.exclusive, data.execution_time),
+            width: '100%',
+            height: '10px'
+          }}
+        ></div>
+      </div>
       <Handle
         type="source"
         position={Position.Right}

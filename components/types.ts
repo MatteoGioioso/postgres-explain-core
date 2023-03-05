@@ -113,44 +113,14 @@ export const PEV_PLAN_TAG = "plan_";
 export const EstimateDirectionOver = "over";
 export const EstimateDirectionUnder = "under";
 export const EstimateDirectionNone = "none";
-export interface PlanProps {
-  NODE_TYPE_PROP: string;
-  ACTUAL_ROWS_PROP: string;
-  PLAN_ROWS_PROP: string;
-  ACTUAL_TOTAL_TIME_PROP: string;
-  ACTUAL_LOOPS_PROP: string;
-  TOTAL_COST_PROP: string;
-  PLANS_PROP: string;
-  STARTUP_COST: string;
-  PLAN_WIDTH: string;
-  ACTUAL_STARTUP_TIME_PROP: string;
-  RELATION_NAME_PROP: string;
-  SCHEMA_PROP: string;
-  ALIAS_PROP: string;
-  GROUP_KEY_PROP: string;
-  SORT_KEY_PROP: string;
-  JOIN_TYPE_PROP: string;
-  INDEX_NAME_PROP: string;
-  HASH_CONDITION_PROP: string;
-  EXECUTION_TIME_PROP: string;
-  /**
-   * computed
-   */
-  COMPUTED_TAGS_PROP: string;
-  COSTLIEST_NODE_PROP: string;
-  LARGEST_NODE_PROP: string;
-  SLOWEST_NODE_PROP: string;
-  MAXIMUM_COSTS_PROP: string;
-  MAXIMUM_ROWS_PROP: string;
-  MAXIMUM_DURATION_PROP: string;
-  ACTUAL_DURATION_PROP: string;
-  ACTUAL_COST_PROP: string;
-  PLANNER_ESTIMATE_FACTOR: string;
-  PLANNER_ESTIMATE_DIRECTION: string;
-  CTE_SCAN_PROP: string;
-  CTE_NAME_PROP: string;
-  ARRAY_INDEX_KEY: string;
-}
+export const SEQUENTIAL_SCAN = "Seq Scan";
+export const INDEX_SCAN = "Index Scan";
+export const INDEX_ONLY_SCAN = "Index Only Scan";
+export const BITMAP_INDEX_SCAN = "Bitmap Index Scan";
+export const BITMAP_HEAP_SCAN = "Bitmap Heap Scan";
+export const HASH = "Hash";
+export const HASH_JOIN = "Hash Join";
+export const SORT = "Sort";
 
 //////////
 // source: types.go
@@ -180,6 +150,7 @@ export interface Explained {
 }
 export interface NodeSummary {
   operation: string;
+  scope: string;
   level: number /* int */;
   costs: string;
   buffers: string;
@@ -193,6 +164,11 @@ export interface Rows {
   estimation_factor: number /* float64 */;
   estimation_direction: string;
 }
+export interface Buffers {
+  reads: number /* float64 */;
+  written: number /* float64 */;
+  hits: number /* float64 */;
+}
 export interface PlanRow {
   node_id: string;
   node_parent_id: string;
@@ -203,6 +179,8 @@ export interface PlanRow {
   rows: Rows;
   exclusive: number /* float64 */;
   execution_time: number /* float64 */;
-  reads: number /* float64 */;
-  written: number /* float64 */;
+  buffers: Buffers;
+}
+export interface Operation {
+  scope: string;
 }

@@ -4,11 +4,14 @@ import { SummaryTableProps } from './interfaces'
 import { PlanRow } from './types'
 import 'reactflow/dist/style.css'
 import { NodeWidget } from './diagram/NodeWidget'
+import { Box } from '@cloudscape-design/components'
+import { EdgeWidget } from './diagram/EdgeWidget'
 
 export const SummaryDiagram = ({ summary, stats }: SummaryTableProps) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const nodeTypes = useMemo(() => ({ special: NodeWidget }), []);
+  const edgeTypes = useMemo(() => ({ special: EdgeWidget }), []);
 
   const calculateNodes = () => {
     const initialNodes = []
@@ -17,9 +20,9 @@ export const SummaryDiagram = ({ summary, stats }: SummaryTableProps) => {
       const row: PlanRow = summary[i]
       const node: Node = {
         id: row.node_id,
-        position: { x: 350 * (summary.length - i), y: 150 * (row.level + 1) },
+        position: { x: 350 * (summary.length - i), y: 350 * (row.level + 1) },
         data: {
-          label: `${row.node.operation} on ${row.node.relation}`,
+          ...row
         },
         targetPosition: Position.Left,
         sourcePosition: Position.Right,
@@ -33,6 +36,10 @@ export const SummaryDiagram = ({ summary, stats }: SummaryTableProps) => {
         target: row.node_parent_id,
         // TODO: change stroke based on the amount of time or rows
         // style: { strokeWidth: row.rows.total /100 },
+        data: {
+          rows: row.rows.total
+        },
+        type: 'special',
       }
 
       initialNodes.push(node)
@@ -51,7 +58,7 @@ export const SummaryDiagram = ({ summary, stats }: SummaryTableProps) => {
   }, []);
 
   return (
-    <div style={{ height: '800px' }}>
+    <div style={{ height: '600px' }}>
       <ReactFlow
         fitView
         nodes={nodes}
@@ -59,6 +66,7 @@ export const SummaryDiagram = ({ summary, stats }: SummaryTableProps) => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
       >
         <Controls/>
       </ReactFlow>
