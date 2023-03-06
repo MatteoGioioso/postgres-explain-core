@@ -125,6 +125,7 @@ const (
 	EstimateDirectionUnder = "under"
 	EstimateDirectionNone  = "none"
 
+	// Operations
 	SEQUENTIAL_SCAN   = "Seq Scan"
 	INDEX_SCAN        = "Index Scan"
 	INDEX_ONLY_SCAN   = "Index Only Scan"
@@ -132,5 +133,7 @@ const (
 	BITMAP_HEAP_SCAN  = "Bitmap Heap Scan"
 	HASH              = "Hash"
 	HASH_JOIN         = "Hash Join"
+	HASH_AGGREGATE    = "HashAggregate"
 	SORT              = "Sort"
+	FUNCTION_SCAN     = "Function Scan"
 )

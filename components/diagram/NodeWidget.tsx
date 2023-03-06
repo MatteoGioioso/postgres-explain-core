@@ -6,6 +6,16 @@ import { PlanRow } from '../types'
 import Highlight from 'react-highlight'
 import { betterNumbers, getCellWarningColor } from '../utils'
 
+const getScopes = (data: PlanRow): JSX.Element => {
+  return (
+    <Box variant="p">
+      <p style={{margin: 0}}>{data.node.scope && `on`} <code>{data.node.scope}</code></p>
+      <p style={{margin: 0}}>{data.node.index && `by`} <code> {data.node.index}</code></p>
+      <p style={{margin: 0}}>{data.node.filters && `filter by`} <code> {data.node.filters}</code></p>
+    </Box>
+  )
+}
+
 // @ts-ignore
 export const NodeWidget = memo(({ data, isConnectable }: { data: PlanRow }) => {
   return (
@@ -14,21 +24,18 @@ export const NodeWidget = memo(({ data, isConnectable }: { data: PlanRow }) => {
         type="target"
         position={Position.Left}
         isConnectable={false}
+        style={{backgroundColor: 'transparent', color: 'transparent'}}
       />
 
       <div style={{
         border: '1px solid black',
         borderRadius: '10px',
-        padding: "10px",
+        padding: '10px',
       }}>
-        <Box variant="h2">
+        <Box variant="h3">
           {data.node.operation}
         </Box>
-        <Box variant="p">
-          <Highlight style={{padding: 0}}>
-            {data.node.scope}
-          </Highlight>
-        </Box>
+        {getScopes(data)}
         <Box variant="p">
           Time: {betterNumbers(data.exclusive)} ms
         </Box>
@@ -36,7 +43,7 @@ export const NodeWidget = memo(({ data, isConnectable }: { data: PlanRow }) => {
           style={{
             backgroundColor: getCellWarningColor(data.exclusive, data.execution_time),
             width: '100%',
-            height: '10px'
+            height: '10px',
           }}
         ></div>
       </div>

@@ -23,7 +23,7 @@ func NewPlanEnricher() *PlanEnricher {
 	}
 }
 
-func (ps *PlanEnricher) AnalyzePlan(rootNode Node) {
+func (ps *PlanEnricher) AnalyzePlan(rootNode Node, stats Stats) {
 	ps.processNode(rootNode)
 	rootNode[MAXIMUM_ROWS_PROP] = ps.maxRows
 	rootNode[MAXIMUM_COSTS_PROP] = ps.maxCost
@@ -57,12 +57,17 @@ func (ps *PlanEnricher) processNode(node Node) {
 					}
 				}
 
+				// Plans belonging to CTEs are not found as direct child of CTEs nodes,
+				// { "Node Type": "CTE Scan" }
+				// Instead they just appears as child nodes of root, thus they have to be
+				// grouped and put back in the root node
 				if IsCTE(sn) {
 					subPlanName := strings.ReplaceAll(sn[SUBPLAN_NAME].(string), "CTE ", "")
 					sn[IS_CTE_ROOT] = "true"
 					sn[CTE_SUBPLAN_OF] = subPlanName
 					ps.ctes[subPlanName] = sn
-				} else {
+				}
+				if node[CTE_SUBPLAN_OF] != nil {
 					sn[CTE_SUBPLAN_OF] = node[CTE_SUBPLAN_OF]
 				}
 

@@ -139,7 +139,7 @@ const explainerColumns: Array<TableProps.ColumnDefinition<PlanRow>> = [
           {'└' + '──'.repeat(e.node.level) + '->'}
           <SpaceBetween size="xxxs">
             <div>
-              <Box variant="awsui-key-label">{e.node.operation} {e.node.relation && `on`} {e.node.relation}</Box>
+              <Box variant="awsui-key-label">{e.node.operation} {e.node.scope && `on`} {e.node.scope}</Box>
             </div>
             <div>
               <div>{e.node.costs}</div>

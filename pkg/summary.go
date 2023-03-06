@@ -30,11 +30,6 @@ func (s *Summary) Do(node Node, stats Stats) []PlanRow {
 }
 
 func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string) {
-	// CTE will be recurse in a second moment in the recurseCTEsNodes method
-	if node[IS_CTE_ROOT] == "true" {
-		return
-	}
-
 	id := uuid.New().String()
 
 	row := PlanRow{
@@ -71,8 +66,12 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 	}
 
 	if node[PLANS_PROP] != nil {
-		for _, subNode := range node[PLANS_PROP].([]interface{}) {
-			s.recurseNode(subNode.(Node), stats, level+1, id)
+		subNodes := node[PLANS_PROP].([]interface{})
+		for _, subNode := range subNodes {
+			// CTE will be recurse in a second moment in the recurseCTEsNodes method
+			if subNode.(Node)[IS_CTE_ROOT] != "true" {
+				s.recurseNode(subNode.(Node), stats, level+1, id)
+			}
 		}
 	}
 }
@@ -89,16 +88,12 @@ func (s *Summary) getNode(node Node, level int) NodeSummary {
 		node[ACTUAL_LOOPS_PROP],
 	}
 
-	var rel string
-	if node[RELATION_NAME_PROP] != nil {
-		rel = node[RELATION_NAME_PROP].(string)
-	}
-
 	operation := node[NODE_TYPE_PROP].(string)
 	return NodeSummary{
 		Operation: operation,
 		Scope:     s.GetOperationScope(operation, node),
-		Relation:  rel,
+		Index:     s.GetOperationIndex(operation, node),
+		Filters:   s.GetOperationFilter(operation, node),
 		Level:     level,
 		Costs: fmt.Sprintf(
 			"(cost=%v...%v rows=%v width=%v) (actual time=%v...%v rows=%v loops=%v)",
@@ -113,33 +108,28 @@ func (s *Summary) getNode(node Node, level int) NodeSummary {
 	}
 }
 
-var operationsMap = map[string]Operation{
-	SEQUENTIAL_SCAN: {
-		Scope: RELATION_NAME,
-	},
-	HASH_JOIN: {
-		Scope: HASH_CONDITION_PROP,
-	},
-	SORT: {
-		Scope: SORT_KEY,
-	},
-}
-
 func (s *Summary) GetOperationScope(op string, node Node) string {
 	if operation, ok := operationsMap[op]; ok {
-		switch r := node[operation.Scope].(type) {
-		case string:
-			return r
-		case []interface{}: // When Sorting we can have an array of sorting keys
-			marshal, err := json.MarshalIndent(r, "", "    ")
-			if err != nil {
-				panic(fmt.Errorf("could not marshal node operation scope into []string: %v", err))
-			}
-			return string(marshal)
-		}
+		return convertPropToString(node[operation.Scope])
 	}
 
-	return "-"
+	return ""
+}
+
+func (s *Summary) GetOperationFilter(op string, node Node) string {
+	if operation, ok := operationsMap[op]; ok {
+		return convertPropToString(node[operation.Filter])
+	}
+
+	return ""
+}
+
+func (s *Summary) GetOperationIndex(op string, node Node) string {
+	if operation, ok := operationsMap[op]; ok {
+		return convertPropToString(node[operation.Index])
+	}
+
+	return ""
 }
 
 func (s *Summary) recurseCTEsNodes(ctesNodes map[string]Node, stats Stats) {
@@ -147,5 +137,51 @@ func (s *Summary) recurseCTEsNodes(ctesNodes map[string]Node, stats Stats) {
 		cte := s.ctes[cteName]
 		delete(node, IS_CTE_ROOT)
 		s.recurseNode(node, stats, cte.level+1, cte.id)
+	}
+}
+
+var operationsMap = map[string]Operation{
+	SEQUENTIAL_SCAN: {
+		Scope:  RELATION_NAME,
+		Filter: FILTER,
+	},
+	INDEX_SCAN: {
+		Scope:  RELATION_NAME,
+		Index:  INDEX_NAME,
+		Filter: FILTER,
+	},
+	INDEX_ONLY_SCAN: {
+		Scope:  RELATION_NAME,
+		Index:  INDEX_NAME,
+		Filter: FILTER,
+	},
+	HASH_JOIN: {
+		Scope:  HASH_CONDITION_PROP,
+		Filter: "Join Filter",
+	},
+	SORT: {
+		Scope: SORT_KEY,
+	},
+	CTE_SCAN: {
+		Scope:  CTE_NAME,
+		Filter: FILTER,
+	},
+	FUNCTION_SCAN: {
+		Scope: FUNCTION_NAME,
+	},
+}
+
+func convertPropToString(prop interface{}) string {
+	switch r := prop.(type) {
+	case string:
+		return r
+	case []interface{}: // When Sorting we can have an array of sorting keys
+		marshal, err := json.MarshalIndent(r, "", "    ")
+		if err != nil {
+			panic(fmt.Errorf("could not marshal node operation scope into []string: %v", err))
+		}
+		return string(marshal)
+	default:
+		return ""
 	}
 }

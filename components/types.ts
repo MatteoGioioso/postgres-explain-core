@@ -116,6 +116,9 @@ export const PEV_PLAN_TAG = "plan_";
 export const EstimateDirectionOver = "over";
 export const EstimateDirectionUnder = "under";
 export const EstimateDirectionNone = "none";
+/**
+ * Operations
+ */
 export const SEQUENTIAL_SCAN = "Seq Scan";
 export const INDEX_SCAN = "Index Scan";
 export const INDEX_ONLY_SCAN = "Index Only Scan";
@@ -123,7 +126,9 @@ export const BITMAP_INDEX_SCAN = "Bitmap Index Scan";
 export const BITMAP_HEAP_SCAN = "Bitmap Heap Scan";
 export const HASH = "Hash";
 export const HASH_JOIN = "Hash Join";
+export const HASH_AGGREGATE = "HashAggregate";
 export const SORT = "Sort";
+export const FUNCTION_SCAN = "Function Scan";
 
 //////////
 // source: types.go
@@ -143,6 +148,7 @@ export interface StatsFromPlan {
 export interface Stats {
   execution_time: number /* float64 */;
   planning_time: number /* float64 */;
+  maximum_duration: number /* float64 */;
 }
 export type Plans = {
     Plan: { [key: string]: any};
@@ -159,6 +165,7 @@ export interface NodeSummary {
   buffers: string;
   relation: string;
   filters: string;
+  index: string;
 }
 export interface Rows {
   total: number /* float64 */;
@@ -176,6 +183,7 @@ export interface PlanRow {
   node_id: string;
   node_parent_id: string;
   level: number /* int */;
+  branch: string;
   node: NodeSummary;
   inclusive: number /* float64 */;
   loops: number /* float64 */;
@@ -187,4 +195,6 @@ export interface PlanRow {
 }
 export interface Operation {
   scope: string;
+  index: string;
+  filter: string;
 }

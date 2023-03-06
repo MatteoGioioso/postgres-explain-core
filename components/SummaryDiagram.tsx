@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect } from 'react'
-import ReactFlow, { Controls, Edge, Node, Position, useEdgesState, useNodesState } from 'reactflow'
+import ReactFlow, { Controls, Edge, MarkerType, Node, Position, useEdgesState, useNodesState } from 'reactflow'
 import { SummaryTableProps } from './interfaces'
 import { PlanRow } from './types'
 import 'reactflow/dist/style.css'
@@ -7,26 +7,27 @@ import { NodeWidget } from './diagram/NodeWidget'
 import { EdgeWidget } from './diagram/EdgeWidget'
 
 export const SummaryDiagram = ({ summary, stats }: SummaryTableProps) => {
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const nodeTypes = useMemo(() => ({ special: NodeWidget }), []);
-  const edgeTypes = useMemo(() => ({ special: EdgeWidget }), []);
+  const [nodes, setNodes, onNodesChange] = useNodesState([])
+  const [edges, setEdges, onEdgesChange] = useEdgesState([])
+  const nodeTypes = useMemo(() => ({ special: NodeWidget }), [])
+  const edgeTypes = useMemo(() => ({ special: EdgeWidget }), [])
 
   const calculateNodes = () => {
     const initialNodes = []
     const initialEdges = []
+
     for (let i = 0; i < summary.length; i++) {
       const row: PlanRow = summary[i]
       const node: Node = {
         id: row.node_id,
         position: { x: 350 * (summary.length - i), y: 350 * (row.level + 1) },
         data: {
-          ...row
+          ...row,
         },
         targetPosition: Position.Left,
         sourcePosition: Position.Right,
         type: 'special',
-        draggable: true
+        draggable: true,
       }
 
       const edge: Edge = {
@@ -36,9 +37,14 @@ export const SummaryDiagram = ({ summary, stats }: SummaryTableProps) => {
         // TODO: change stroke based on the amount of rows
         // style: { strokeWidth: row.rows.total /100 },
         data: {
-          rows: row.rows.total
+          rows: row.rows.total,
         },
         type: 'special',
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 50,
+          height: 50,
+        }
       }
 
       initialNodes.push(node)
@@ -46,15 +52,15 @@ export const SummaryDiagram = ({ summary, stats }: SummaryTableProps) => {
     }
 
     return {
-      initialNodes, initialEdges
+      initialNodes, initialEdges,
     }
   }
 
   useEffect(() => {
-    const {initialNodes, initialEdges} = calculateNodes()
-    setNodes(initialNodes);
-    setEdges(initialEdges);
-  }, []);
+    const { initialNodes, initialEdges } = calculateNodes()
+    setNodes(initialNodes)
+    setEdges(initialEdges)
+  }, [])
 
   return (
     <div style={{ height: '600px' }}>
