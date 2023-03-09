@@ -2,7 +2,10 @@ module github.com/MatteoGioioso/postgres-explain
 
 go 1.20
 
-require github.com/gzuidhof/tygo v0.2.4
+require (
+	github.com/google/uuid v1.3.0
+	github.com/gzuidhof/tygo v0.2.4
+)
 
 require (
 	github.com/fatih/structtag v1.2.0 // indirect

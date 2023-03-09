@@ -13,9 +13,9 @@ type StatsFromPlan struct {
 }
 
 type Stats struct {
-	ExecutionTime   float64 `json:"execution_time"`
-	PlanningTime    float64 `json:"planning_time"`
-	MaximumDuration float64 `json:"maximum_duration"`
+	ExecutionTime float64 `json:"execution_time"`
+	PlanningTime  float64 `json:"planning_time"`
+	MaxRows       float64 `json:"max_rows"`
 }
 
 type Plans []struct {
@@ -25,6 +25,11 @@ type Plans []struct {
 type Explained struct {
 	Summary []PlanRow `json:"summary"`
 	Stats   Stats     `json:"stats"`
+}
+
+type Position struct {
+	XFactor float64 `json:"x_factor"`
+	YFactor float64 `json:"y_factor"`
 }
 
 type NodeSummary struct {
@@ -65,6 +70,7 @@ type PlanRow struct {
 	ExecutionTime float64     `json:"execution_time"`
 	Buffers       Buffers     `json:"buffers"`
 	SubPlanOf     string      `json:"sub_plan_of"`
+	Position      Position    `json:"position"`
 }
 
 type Operation struct {

@@ -48,6 +48,10 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 			EstimationDirection: node[PLANNER_ESTIMATE_DIRECTION].(string),
 		},
 		ExecutionTime: stats.ExecutionTime,
+		Position: Position{
+			XFactor: node[X_POSITION_FACTOR].(float64),
+			YFactor: node[Y_POSITION_FACTOR].(float64),
+		},
 	}
 
 	if node[CTE_SUBPLAN_OF] != nil {

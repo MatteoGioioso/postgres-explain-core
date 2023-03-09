@@ -136,4 +136,9 @@ const (
 	HASH_AGGREGATE    = "HashAggregate"
 	SORT              = "Sort"
 	FUNCTION_SCAN     = "Function Scan"
+
+	// Others
+
+	X_POSITION_FACTOR = "*X Position Factor"
+	Y_POSITION_FACTOR = "*Y Position Factor"
 )

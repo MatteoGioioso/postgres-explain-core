@@ -129,6 +129,8 @@ export const HASH_JOIN = "Hash Join";
 export const HASH_AGGREGATE = "HashAggregate";
 export const SORT = "Sort";
 export const FUNCTION_SCAN = "Function Scan";
+export const X_POSITION_FACTOR = "*X Position Factor";
+export const Y_POSITION_FACTOR = "*Y Position Factor";
 
 //////////
 // source: types.go
@@ -148,7 +150,7 @@ export interface StatsFromPlan {
 export interface Stats {
   execution_time: number /* float64 */;
   planning_time: number /* float64 */;
-  maximum_duration: number /* float64 */;
+  max_rows: number /* float64 */;
 }
 export type Plans = {
     Plan: { [key: string]: any};
@@ -156,6 +158,10 @@ export type Plans = {
 export interface Explained {
   summary: PlanRow[];
   stats: Stats;
+}
+export interface Position {
+  x_factor: number /* float64 */;
+  y_factor: number /* float64 */;
 }
 export interface NodeSummary {
   operation: string;
@@ -192,6 +198,7 @@ export interface PlanRow {
   execution_time: number /* float64 */;
   buffers: Buffers;
   sub_plan_of: string;
+  position: Position;
 }
 export interface Operation {
   scope: string;

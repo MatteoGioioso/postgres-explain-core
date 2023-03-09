@@ -23,8 +23,9 @@ func NewPlanEnricher() *PlanEnricher {
 	}
 }
 
-func (ps *PlanEnricher) AnalyzePlan(rootNode Node, stats Stats) {
+func (ps *PlanEnricher) AnalyzePlan(rootNode Node, stats *Stats) {
 	ps.processNode(rootNode)
+	stats.MaxRows = ps.maxRows
 	rootNode[MAXIMUM_ROWS_PROP] = ps.maxRows
 	rootNode[MAXIMUM_COSTS_PROP] = ps.maxCost
 	rootNode[MAXIMUM_DURATION_PROP] = ps.maxDuration
