@@ -1,5 +1,17 @@
 import React, {useMemo, useEffect} from 'react'
-import ReactFlow, {Controls, Edge, MarkerType, MiniMap, Node, Panel, Position, useEdgesState, useNodesState} from 'reactflow'
+import ReactFlow, {
+    Controls,
+    Edge,
+    MarkerType,
+    MiniMap,
+    Node,
+    Panel,
+    Position,
+    useEdgesState,
+    useNodesState,
+    useReactFlow,
+    ReactFlowProvider
+} from 'reactflow'
 import {SummaryTableProps} from './interfaces'
 import {PlanRow} from './types'
 import 'reactflow/dist/style.css'
@@ -7,32 +19,74 @@ import {NodeWidget} from './diagram/NodeWidget'
 import {EdgeWidget} from './diagram/EdgeWidget'
 import {Box} from "@cloudscape-design/components";
 
-export const SummaryDiagram = ({summary, stats}: SummaryTableProps) => {
+const elk = new ELK();
+
+const getLayoutedElements = (nodes, edges, options = {}) => {
+    const graph = {
+        id: 'root',
+        layoutOptions: options,
+        children: nodes.map((node) => ({
+            ...node,
+            targetPosition: 'top',
+            sourcePosition: 'bottom',
+            width: 250,
+            height: 80,
+        })),
+        edges: edges,
+    };
+
+    return elk
+        .layout(graph)
+        .then((layoutedGraph) => ({
+            nodes: layoutedGraph.children.map((node) => ({
+                ...node,
+                position: {x: node.x, y: node.y},
+            })),
+
+            edges: layoutedGraph.edges,
+        }))
+        .catch(console.error);
+};
+
+export const Diagram = ({summary, stats}: SummaryTableProps) => {
+    const { fitView } = useReactFlow()
     const [nodes, setNodes, onNodesChange] = useNodesState([])
     const [edges, setEdges, onEdgesChange] = useEdgesState([])
     const nodeTypes = useMemo(() => ({special: NodeWidget}), [])
     const edgeTypes = useMemo(() => ({special: EdgeWidget}), [])
-    const calculatePosition = (row: PlanRow, i: number) => {
-        return {x: row.position.x_factor, y: row.position.y_factor}
-    }
+
+    // Elk has a *huge* amount of options to configure. To see everything you can
+    // tweak check out:
+    //
+    // - https://www.eclipse.org/elk/reference/algorithms.html
+    // - https://www.eclipse.org/elk/reference/options.html
+    const elkOptions = {
+        'elk.algorithm': 'layered',
+        'elk.spacing.nodeNode': 80,
+        'elk.layered.spacing.nodeNodeBetweenLayers': 80,
+    };
 
     const calculateNodes = () => {
         const initialNodes = []
         const initialEdges = []
+
         for (let i = 0; i < summary.length; i++) {
             const row: PlanRow = summary[i]
 
             const node: Node = {
                 id: row.node_id,
-                position: {x: row.position.x_factor * 500, y: row.position.y_factor * 250},
                 data: {
                     ...row,
                 },
-                targetPosition: Position.Left,
-                sourcePosition: Position.Right,
+                targetPosition: Position.Top,
+                sourcePosition: Position.Bottom,
                 type: 'special',
                 draggable: true,
             }
+
+            initialNodes.push(node)
+
+            if (row.node_parent_id === "") continue
 
             const edge: Edge = {
                 id: `${row.node_id}-${row.node_parent_id}`,
@@ -45,23 +99,29 @@ export const SummaryDiagram = ({summary, stats}: SummaryTableProps) => {
                 type: 'special',
             }
 
-            initialNodes.push(node)
             initialEdges.push(edge)
         }
 
         return {
-            initialNodes, initialEdges,
+            initialNodes, initialEdges
         }
     }
 
     useEffect(() => {
         const {initialNodes, initialEdges} = calculateNodes()
-        setNodes(initialNodes)
-        setEdges(initialEdges)
+
+        const opts = {'elk.direction': 'DOWN', ...elkOptions};
+
+        getLayoutedElements(initialNodes, initialEdges, opts).then(({nodes: layoutedNodes, edges: layoutedEdges}) => {
+            setNodes(layoutedNodes);
+            setEdges(layoutedEdges);
+
+            window.requestAnimationFrame(() => fitView());
+        });
     }, [])
 
     return (
-        <div style={{height: '600px'}}>
+        <div style={{height: '1000px'}}>
             <ReactFlow
                 fitView
                 nodes={nodes}
@@ -72,30 +132,16 @@ export const SummaryDiagram = ({summary, stats}: SummaryTableProps) => {
                 edgeTypes={edgeTypes}
             >
                 <Controls/>
-                <Panel position="bottom-center" style={{zIndex: 0}}>
-                    <i
-                        style={{
-                            marginTop: "7px",
-                            width: "500px",
-                            background: "#dedcdc",
-                            height: "2px",
-                            float: "left",
-                        }}
-                    />
-                    <i
-                        style={{
-                            width: 0,
-                            height: 0,
-                            borderTop: "8px solid transparent",
-                            borderBottom: "8px solid transparent",
-                            borderLeft: "10px solid #dedcdc",
-                            float: "right",
-                        }}
-                    />
-                    <Box variant="p" color="text-label">Flow</Box>
-                </Panel>
                 <MiniMap/>
             </ReactFlow>
         </div>
+    )
+}
+
+export const SummaryDiagram = ({summary, stats}: SummaryTableProps) => {
+    return (
+        <ReactFlowProvider>
+            <Diagram summary={summary} stats={stats}/>
+        </ReactFlowProvider>
     )
 }

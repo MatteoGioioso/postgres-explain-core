@@ -2,7 +2,7 @@
   "name": "postgres-explain",
   "version": "1.0.0",
   "description": "components for postgres explain visualizer",
-  "main": "./components/index.js",
+  "main": "./dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc"
@@ -27,11 +27,18 @@
   "engines": {
     "node": ">=17.0.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "dagre": "^0.8.5",
+    "elkjs": "^0.8.2",
+    "lodash": "^4.17.21",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-highlight": "^0.15.0",
+    "web-worker": "^1.2.0"
+  },
   "peerDependencies": {
     "@cloudscape-design/components": "^3.0.209",
     "@cloudscape-design/global-styles": "^1.0.7",
-    "react": "^18.2.0",
     "reactflow": "^11.5.6"
   }
 }
