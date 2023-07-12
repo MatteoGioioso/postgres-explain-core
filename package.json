@@ -28,13 +28,13 @@
     "node": ">=17.0.0"
   },
   "dependencies": {
-    "dagre": "^0.8.5",
-    "elkjs": "^0.8.2",
+    "@cloudscape-design/components": "^3.0.334",
+    "@cloudscape-design/global-styles": "^1.0.11",
     "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-highlight": "^0.15.0",
-    "web-worker": "^1.2.0"
+    "reactflow": "^11.7.4"
   },
   "peerDependencies": {
     "@cloudscape-design/components": "^3.0.209",
