@@ -20,6 +20,7 @@ const (
 	JOIN_TYPE_PROP           = "Join Type"
 	INDEX_NAME_PROP          = "Index Name"
 	HASH_CONDITION_PROP      = "Hash Cond"
+	INDEX_CONDITION          = "Index Cond"
 	EXECUTION_TIME_PROP      = "Execution Time"
 	TOTAL_RUNTIME            = "Total Runtime"
 
@@ -67,6 +68,7 @@ const (
 	SHARED_WRITTEN_BLOCKS = "Shared Written Blocks"
 	TEMP_READ_BLOCKS      = "Temp Read Blocks"
 	TEMP_WRITTEN_BLOCKS   = "Temp Written Blocks"
+	TEMP_HIT_BLOCKS       = "Temp Hit Blocks"
 	LOCAL_HIT_BLOCKS      = "Local Hit Blocks"
 	LOCAL_READ_BLOCKS     = "Local Read Blocks"
 	LOCAL_DIRTIED_BLOCKS  = "Local Dirtied Blocks"
@@ -136,6 +138,8 @@ const (
 	HASH_AGGREGATE    = "HashAggregate"
 	SORT              = "Sort"
 	FUNCTION_SCAN     = "Function Scan"
+
+	GROUP_AGGREGATE = "GroupAggregate"
 
 	// Others
 

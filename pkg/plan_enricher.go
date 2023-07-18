@@ -25,12 +25,12 @@ func NewPlanEnricher() *PlanEnricher {
 
 func (ps *PlanEnricher) AnalyzePlan(rootNode Node, stats *Stats) {
 	ps.processNode(rootNode)
-	stats.MaxRows = ps.maxRows
-	rootNode[MAXIMUM_ROWS_PROP] = ps.maxRows
-	rootNode[MAXIMUM_COSTS_PROP] = ps.maxCost
-	rootNode[MAXIMUM_DURATION_PROP] = ps.maxDuration
 
+	ps.calculateMaximums(rootNode)
 	ps.findOutlierNodes(rootNode)
+	stats.MaxRows = ps.maxRows
+	stats.MaxCost = ps.maxCost
+	stats.MaxDuration = ps.maxDuration
 	rootNode[CTES] = ps.ctes
 }
 
@@ -43,8 +43,6 @@ func (ps *PlanEnricher) processNode(node Node) {
 
 	// Iterate over all the node's properties: "Startup Cost", "Planning Time", "Plans", ect...
 	for name, value := range node {
-		ps.calculateMaximums(node, name, value)
-
 		// If the key is "Plans", then iterated over all the sub nodes
 		if name == PLANS_PROP {
 			for _, subNode := range value.([]interface{}) {
@@ -81,7 +79,19 @@ func (ps *PlanEnricher) processNode(node Node) {
 	ps.calculateExclusive(node)
 }
 
-func (ps *PlanEnricher) calculateMaximums(node Node, key string, value interface{}) {
+func (ps *PlanEnricher) calculateMaximums(node Node) {
+	for name, value := range node {
+		ps.getMaximum(name, value)
+		if name == PLANS_PROP {
+			for _, subNode := range value.([]interface{}) {
+				sn := subNode.(Node)
+				ps.calculateMaximums(sn)
+			}
+		}
+	}
+}
+
+func (ps *PlanEnricher) getMaximum(key string, value interface{}) {
 	var valueFloat float64
 	switch value.(type) {
 	case float64:
@@ -94,11 +104,11 @@ func (ps *PlanEnricher) calculateMaximums(node Node, key string, value interface
 		ps.maxRows = valueFloat
 	}
 
-	if key == ACTUAL_COST_PROP && ps.maxCost < valueFloat {
+	if key == TOTAL_COST_PROP && ps.maxCost < valueFloat {
 		ps.maxCost = valueFloat
 	}
 
-	if key == ACTUAL_DURATION_PROP && ps.maxDuration < valueFloat {
+	if key == EXCLUSIVE_DURATION && ps.maxDuration < valueFloat {
 		ps.maxDuration = valueFloat
 	}
 }

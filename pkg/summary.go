@@ -36,22 +36,38 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 		NodeId:       id,
 		NodeParentId: parentId,
 		Level:        level,
-		Node:         s.getNode(node, level),
+		Operation:    node[NODE_TYPE_PROP].(string),
+		Scopes:       s.scopes(node),
 		Inclusive:    node[ACTUAL_TOTAL_TIME_PROP].(float64),
 		Loops:        node[ACTUAL_LOOPS_PROP].(float64),
 		Exclusive:    node[EXCLUSIVE_DURATION].(float64),
 		Rows: Rows{
 			Total:               node[ACTUAL_ROWS_PROP].(float64),
+			PlannedRows:         node[PLAN_ROWS_PROP].(float64),
 			Removed:             node[ROWS_REMOVED_BY_FILTER].(float64),
 			Filters:             node[FILTER].(string),
 			EstimationFactor:    node[PLANNER_ESTIMATE_FACTOR].(float64),
 			EstimationDirection: node[PLANNER_ESTIMATE_DIRECTION].(string),
 		},
 		ExecutionTime: stats.ExecutionTime,
-		Position: Position{
-			XFactor: node[X_POSITION_FACTOR].(float64),
-			YFactor: node[Y_POSITION_FACTOR].(float64),
+		Buffers:       Buffers{},
+		Costs: Costs{
+			StartupCost: node[STARTUP_COST].(float64),
+			TotalCost:   node[TOTAL_COST_PROP].(float64),
+			PlanWidth:   node[PLAN_WIDTH].(float64),
 		},
+	}
+
+	if node[SHARED_HIT_BLOCKS] != nil {
+		row.Buffers.Reads = node[SHARED_READ_BLOCKS].(float64)
+		row.Buffers.Written = node[SHARED_WRITTEN_BLOCKS].(float64)
+		row.Buffers.Hits = node[SHARED_HIT_BLOCKS].(float64)
+	}
+
+	if node[TEMP_READ_BLOCKS] != nil {
+		row.Buffers.TempReads = node[TEMP_READ_BLOCKS].(float64)
+		row.Buffers.TempWritten = node[TEMP_WRITTEN_BLOCKS].(float64)
+		row.Buffers.TempHits = node[TEMP_HIT_BLOCKS].(float64)
 	}
 
 	if node[CTE_SUBPLAN_OF] != nil {
@@ -80,60 +96,32 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 	}
 }
 
-func (s *Summary) getNode(node Node, level int) NodeSummary {
-	costsVals := []interface{}{
-		node[STARTUP_COST],
-		node[TOTAL_COST_PROP],
-		node[PLAN_ROWS_PROP],
-		node[PLAN_WIDTH],
-		node[ACTUAL_STARTUP_TIME_PROP],
-		node[ACTUAL_TOTAL_TIME_PROP],
-		node[ACTUAL_ROWS_PROP],
-		node[ACTUAL_LOOPS_PROP],
-	}
+func (s *Summary) scopes(node Node) NodeScopes {
+	//costsVals := []interface{}{
+	//	node[STARTUP_COST],
+	//	node[TOTAL_COST_PROP],
+	//	node[PLAN_ROWS_PROP],
+	//	node[PLAN_WIDTH],
+	//	node[ACTUAL_STARTUP_TIME_PROP],
+	//	node[ACTUAL_TOTAL_TIME_PROP],
+	//	node[ACTUAL_ROWS_PROP],
+	//	node[ACTUAL_LOOPS_PROP],
+	//}
 
 	operation := node[NODE_TYPE_PROP].(string)
-	return NodeSummary{
-		Operation: operation,
-		Scope:     s.GetOperationScope(operation, node),
-		Index:     s.GetOperationIndex(operation, node),
-		Filters:   s.GetOperationFilter(operation, node),
-		Level:     level,
-		Costs: fmt.Sprintf(
-			"(cost=%v...%v rows=%v width=%v) (actual time=%v...%v rows=%v loops=%v)",
-			costsVals...,
-		),
-		Buffers: fmt.Sprintf(
-			"Buffers shared hits: %v, read: %v, written: %v",
-			node[SHARED_HIT_BLOCKS],
-			node[SHARED_READ_BLOCKS],
-			node[SHARED_WRITTEN_BLOCKS],
-		),
-	}
-}
-
-func (s *Summary) GetOperationScope(op string, node Node) string {
-	if operation, ok := operationsMap[op]; ok {
-		return convertPropToString(node[operation.Scope])
+	op, ok := operationsMap[operation]
+	if !ok {
+		op = operationsMap["Default"]
 	}
 
-	return ""
-}
-
-func (s *Summary) GetOperationFilter(op string, node Node) string {
-	if operation, ok := operationsMap[op]; ok {
-		return convertPropToString(node[operation.Filter])
+	return NodeScopes{
+		Table:     convertPropToString(node[op.RelationName]),
+		Filters:   convertPropToString(node[op.Filter]),
+		Index:     convertPropToString(node[op.Index]),
+		Key:       convertPropToString(node[op.Key]),
+		Method:    convertPropToString(node[op.Method]),
+		Condition: convertPropToString(node[op.Condition]),
 	}
-
-	return ""
-}
-
-func (s *Summary) GetOperationIndex(op string, node Node) string {
-	if operation, ok := operationsMap[op]; ok {
-		return convertPropToString(node[operation.Index])
-	}
-
-	return ""
 }
 
 func (s *Summary) recurseCTEsNodes(ctesNodes map[string]Node, stats Stats) {
@@ -142,37 +130,6 @@ func (s *Summary) recurseCTEsNodes(ctesNodes map[string]Node, stats Stats) {
 		delete(node, IS_CTE_ROOT)
 		s.recurseNode(node, stats, cte.level+1, cte.id)
 	}
-}
-
-var operationsMap = map[string]Operation{
-	SEQUENTIAL_SCAN: {
-		Scope:  RELATION_NAME,
-		Filter: FILTER,
-	},
-	INDEX_SCAN: {
-		Scope:  RELATION_NAME,
-		Index:  INDEX_NAME,
-		Filter: FILTER,
-	},
-	INDEX_ONLY_SCAN: {
-		Scope:  RELATION_NAME,
-		Index:  INDEX_NAME,
-		Filter: FILTER,
-	},
-	HASH_JOIN: {
-		Scope:  HASH_CONDITION_PROP,
-		Filter: "Join Filter",
-	},
-	SORT: {
-		Scope: SORT_KEY,
-	},
-	CTE_SCAN: {
-		Scope:  CTE_NAME,
-		Filter: FILTER,
-	},
-	FUNCTION_SCAN: {
-		Scope: FUNCTION_NAME,
-	},
 }
 
 func convertPropToString(prop interface{}) string {

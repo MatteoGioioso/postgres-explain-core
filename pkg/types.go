@@ -16,6 +16,8 @@ type Stats struct {
 	ExecutionTime float64 `json:"execution_time"`
 	PlanningTime  float64 `json:"planning_time"`
 	MaxRows       float64 `json:"max_rows"`
+	MaxDuration   float64 `json:"max_duration"`
+	MaxCost       float64 `json:"max_cost"`
 }
 
 type Plans []struct {
@@ -32,19 +34,24 @@ type Position struct {
 	YFactor float64 `json:"y_factor"`
 }
 
-type NodeSummary struct {
-	Operation string `json:"operation"`
-	Scope     string `json:"scope"`
-	Level     int    `json:"level"`
-	Costs     string `json:"costs"`
-	Buffers   string `json:"buffers"`
-	Relation  string `json:"relation"`
+type NodeScopes struct {
+	Table     string `json:"table"`
 	Filters   string `json:"filters"`
 	Index     string `json:"index"`
+	Key       string `json:"key"`
+	Method    string `json:"method"`
+	Condition string `json:"condition"`
+}
+
+type Costs struct {
+	StartupCost float64 `json:"startup_cost"`
+	TotalCost   float64 `json:"total_cost"`
+	PlanWidth   float64 `json:"plan_width"`
 }
 
 type Rows struct {
 	Total               float64 `json:"total"`
+	PlannedRows         float64 `json:"planned_rows"`
 	Removed             float64 `json:"removed"`
 	Filters             string  `json:"filters"`
 	EstimationFactor    float64 `json:"estimation_factor"`
@@ -52,29 +59,41 @@ type Rows struct {
 }
 
 type Buffers struct {
-	Reads   float64 `json:"reads"`
-	Written float64 `json:"written"`
-	Hits    float64 `json:"hits"`
+	Reads       float64 `json:"reads"`
+	Written     float64 `json:"written"`
+	Hits        float64 `json:"hits"`
+	TempReads   float64 `json:"temp_reads"`
+	TempWritten float64 `json:"temp_written"`
+	TempHits    float64 `json:"temp_hits"`
 }
 
 type PlanRow struct {
-	NodeId        string      `json:"node_id"`
-	NodeParentId  string      `json:"node_parent_id"`
-	Level         int         `json:"level"`
-	Branch        string      `json:"branch"`
-	Node          NodeSummary `json:"node"`
-	Inclusive     float64     `json:"inclusive"`
-	Loops         float64     `json:"loops"`
-	Rows          Rows        `json:"rows"`
-	Exclusive     float64     `json:"exclusive"`
-	ExecutionTime float64     `json:"execution_time"`
-	Buffers       Buffers     `json:"buffers"`
-	SubPlanOf     string      `json:"sub_plan_of"`
-	Position      Position    `json:"position"`
+	NodeId        string     `json:"node_id"`
+	NodeParentId  string     `json:"node_parent_id"`
+	Operation     string     `json:"operation"`
+	Level         int        `json:"level"`
+	Branch        string     `json:"branch"`
+	Scopes        NodeScopes `json:"scopes"`
+	Inclusive     float64    `json:"inclusive"`
+	Loops         float64    `json:"loops"`
+	Rows          Rows       `json:"rows"`
+	Costs         Costs      `json:"costs"`
+	Exclusive     float64    `json:"exclusive"`
+	ExecutionTime float64    `json:"execution_time"`
+	Buffers       Buffers    `json:"buffers"`
+	SubPlanOf     string     `json:"sub_plan_of"`
 }
 
 type Operation struct {
-	Scope  string `json:"scope"`
-	Index  string `json:"index"`
-	Filter string `json:"filter"`
+	RelationName string `json:"relation_name"`
+	Index        string `json:"index"`
+	Filter       string `json:"filter"`
+	Key          string `json:"key"`
+	Method       string `json:"method"`
+	Condition    string `json:"condition"`
+}
+
+type Scope struct {
+	Name    string `json:"name"`
+	Prepend string `json:"prepend"`
 }
