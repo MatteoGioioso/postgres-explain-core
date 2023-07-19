@@ -50,7 +50,10 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 			EstimationDirection: node[PLANNER_ESTIMATE_DIRECTION].(string),
 		},
 		ExecutionTime: stats.ExecutionTime,
-		Buffers:       Buffers{},
+		Buffers: Buffers{
+			EffectiveBlocksRead:    getEffectiveBlocksRead(node),
+			EffectiveBlocksWritten: getEffectiveBlocksWritten(node),
+		},
 		Costs: Costs{
 			StartupCost: node[STARTUP_COST].(float64),
 			TotalCost:   node[TOTAL_COST_PROP].(float64),
@@ -62,12 +65,22 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 		row.Buffers.Reads = node[SHARED_READ_BLOCKS].(float64)
 		row.Buffers.Written = node[SHARED_WRITTEN_BLOCKS].(float64)
 		row.Buffers.Hits = node[SHARED_HIT_BLOCKS].(float64)
+
+		if node[EXCLUSIVE+SHARED_READ_BLOCKS] != nil {
+			row.Buffers.ExclusiveReads = node[EXCLUSIVE+SHARED_READ_BLOCKS].(float64)
+			row.Buffers.ExclusiveWritten = node[EXCLUSIVE+SHARED_WRITTEN_BLOCKS].(float64)
+			row.Buffers.ExclusiveHits = node[EXCLUSIVE+SHARED_HIT_BLOCKS].(float64)
+		}
 	}
 
 	if node[TEMP_READ_BLOCKS] != nil {
 		row.Buffers.TempReads = node[TEMP_READ_BLOCKS].(float64)
 		row.Buffers.TempWritten = node[TEMP_WRITTEN_BLOCKS].(float64)
-		row.Buffers.TempHits = node[TEMP_HIT_BLOCKS].(float64)
+
+		if node[EXCLUSIVE+TEMP_READ_BLOCKS] != nil {
+			row.Buffers.ExclusiveTempReads = node[EXCLUSIVE+TEMP_READ_BLOCKS].(float64)
+			row.Buffers.ExclusiveTempWritten = node[EXCLUSIVE+TEMP_WRITTEN_BLOCKS].(float64)
+		}
 	}
 
 	if node[CTE_SUBPLAN_OF] != nil {
@@ -97,17 +110,6 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 }
 
 func (s *Summary) scopes(node Node) NodeScopes {
-	//costsVals := []interface{}{
-	//	node[STARTUP_COST],
-	//	node[TOTAL_COST_PROP],
-	//	node[PLAN_ROWS_PROP],
-	//	node[PLAN_WIDTH],
-	//	node[ACTUAL_STARTUP_TIME_PROP],
-	//	node[ACTUAL_TOTAL_TIME_PROP],
-	//	node[ACTUAL_ROWS_PROP],
-	//	node[ACTUAL_LOOPS_PROP],
-	//}
-
 	operation := node[NODE_TYPE_PROP].(string)
 	op, ok := operationsMap[operation]
 	if !ok {
@@ -144,5 +146,25 @@ func convertPropToString(prop interface{}) string {
 		return string(marshal)
 	default:
 		return ""
+	}
+}
+
+func getEffectiveBlocksRead(node Node) float64 {
+	if node[EXCLUSIVE+LOCAL_READ_BLOCKS] != nil {
+		return node[EXCLUSIVE+LOCAL_READ_BLOCKS].(float64)
+	} else if node[EXCLUSIVE+TEMP_READ_BLOCKS] != nil {
+		return node[EXCLUSIVE+TEMP_READ_BLOCKS].(float64)
+	} else {
+		return node[EXCLUSIVE+SHARED_READ_BLOCKS].(float64)
+	}
+}
+
+func getEffectiveBlocksWritten(node Node) float64 {
+	if node[EXCLUSIVE+LOCAL_WRITTEN_BLOCKS] != nil {
+		return node[EXCLUSIVE+LOCAL_WRITTEN_BLOCKS].(float64)
+	} else if node[EXCLUSIVE+TEMP_WRITTEN_BLOCKS] != nil {
+		return node[EXCLUSIVE+TEMP_WRITTEN_BLOCKS].(float64)
+	} else {
+		return node[EXCLUSIVE+SHARED_WRITTEN_BLOCKS].(float64)
 	}
 }

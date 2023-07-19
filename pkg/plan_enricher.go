@@ -8,10 +8,12 @@ import (
 )
 
 type PlanEnricher struct {
-	maxRows     float64
-	maxCost     float64
-	maxDuration float64
-	ctes        map[string]Node
+	maxRows          float64
+	maxCost          float64
+	maxDuration      float64
+	maxBlocksWritten float64
+	maxBlocksRead    float64
+	ctes             map[string]Node
 }
 
 func NewPlanEnricher() *PlanEnricher {
@@ -31,7 +33,39 @@ func (ps *PlanEnricher) AnalyzePlan(rootNode Node, stats *Stats) {
 	stats.MaxRows = ps.maxRows
 	stats.MaxCost = ps.maxCost
 	stats.MaxDuration = ps.maxDuration
+	stats.MaxBlocksRead = getMaxBlocksRead(rootNode)
+	stats.MaxBlocksWritten = getMaxBlocksWritten(rootNode)
 	rootNode[CTES] = ps.ctes
+}
+
+func getMaxBlocksRead(rootNode Node) float64 {
+	sum := 0.0
+	if rootNode[SHARED_READ_BLOCKS] != nil {
+		sum += rootNode[SHARED_READ_BLOCKS].(float64)
+	}
+	if rootNode[TEMP_READ_BLOCKS] != nil {
+		sum += rootNode[TEMP_READ_BLOCKS].(float64)
+	}
+	if rootNode[LOCAL_READ_BLOCKS] != nil {
+		sum += rootNode[LOCAL_READ_BLOCKS].(float64)
+	}
+
+	return sum
+}
+
+func getMaxBlocksWritten(rootNode Node) float64 {
+	sum := 0.0
+	if rootNode[SHARED_WRITTEN_BLOCKS] != nil {
+		sum += rootNode[SHARED_WRITTEN_BLOCKS].(float64)
+	}
+	if rootNode[TEMP_WRITTEN_BLOCKS] != nil {
+		sum += rootNode[TEMP_WRITTEN_BLOCKS].(float64)
+	}
+	if rootNode[LOCAL_WRITTEN_BLOCKS] != nil {
+		sum += rootNode[LOCAL_WRITTEN_BLOCKS].(float64)
+	}
+
+	return sum
 }
 
 func IsCTE(node Node) bool {
@@ -219,8 +253,45 @@ func (ps *PlanEnricher) calculateActuals(node Node) {
 	}
 }
 
+// Any node reports total of what it used itself, plus all that its sub-nodes used
+// https://www.depesz.com/2021/06/20/explaining-the-unexplainable-part-6-buffers/
 func (ps *PlanEnricher) calculateExclusive(node Node) {
+	properties := []string{
+		SHARED_HIT_BLOCKS,
+		SHARED_READ_BLOCKS,
+		SHARED_DIRTIED_BLOCKS,
+		SHARED_WRITTEN_BLOCKS,
+		TEMP_READ_BLOCKS,
+		TEMP_WRITTEN_BLOCKS,
+		LOCAL_HIT_BLOCKS,
+		LOCAL_READ_BLOCKS,
+		LOCAL_DIRTIED_BLOCKS,
+		LOCAL_WRITTEN_BLOCKS,
+		IO_READ_TIME,
+		IO_WRITE_TIME,
+	}
 
+	for _, property := range properties {
+		sum := 0.0
+
+		exclusiveProp := EXCLUSIVE + property
+		node[exclusiveProp] = node[property]
+
+		if node[PLANS_PROP] == nil {
+			continue
+		}
+
+		for _, subNode := range node[PLANS_PROP].([]interface{}) {
+			sn := subNode.(Node)
+			if sn[property] != nil {
+				sum += sn[property].(float64)
+			}
+		}
+
+		if node[property] != nil {
+			node[exclusiveProp] = node[property].(float64) - sum
+		}
+	}
 }
 
 func (ps *PlanEnricher) childrenDuration(node Node, duration float64) float64 {

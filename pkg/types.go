@@ -13,11 +13,13 @@ type StatsFromPlan struct {
 }
 
 type Stats struct {
-	ExecutionTime float64 `json:"execution_time"`
-	PlanningTime  float64 `json:"planning_time"`
-	MaxRows       float64 `json:"max_rows"`
-	MaxDuration   float64 `json:"max_duration"`
-	MaxCost       float64 `json:"max_cost"`
+	ExecutionTime    float64 `json:"execution_time"`
+	PlanningTime     float64 `json:"planning_time"`
+	MaxRows          float64 `json:"max_rows"`
+	MaxDuration      float64 `json:"max_duration"`
+	MaxCost          float64 `json:"max_cost"`
+	MaxBlocksRead    float64 `json:"max_blocks_read"`
+	MaxBlocksWritten float64 `json:"max_blocks_written"`
 }
 
 type Plans []struct {
@@ -62,9 +64,21 @@ type Buffers struct {
 	Reads       float64 `json:"reads"`
 	Written     float64 `json:"written"`
 	Hits        float64 `json:"hits"`
+	Dirtied     float64 `json:"dirtied"`
 	TempReads   float64 `json:"temp_reads"`
 	TempWritten float64 `json:"temp_written"`
 	TempHits    float64 `json:"temp_hits"`
+
+	ExclusiveReads       float64 `json:"exclusive_reads"`
+	ExclusiveWritten     float64 `json:"exclusive_written"`
+	ExclusiveHits        float64 `json:"exclusive_hits"`
+	ExclusiveDirtied     float64 `json:"exclusive_dirtied"`
+	ExclusiveTempReads   float64 `json:"exclusive_temp_reads"`
+	ExclusiveTempWritten float64 `json:"exclusive_temp_written"`
+	ExclusiveTempHits    float64 `json:"exclusive_temp_hits"`
+
+	EffectiveBlocksRead    float64 `json:"effective_blocks_read"`
+	EffectiveBlocksWritten float64 `json:"effective_blocks_written"`
 }
 
 type PlanRow struct {

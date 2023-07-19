@@ -68,7 +68,6 @@ const (
 	SHARED_WRITTEN_BLOCKS = "Shared Written Blocks"
 	TEMP_READ_BLOCKS      = "Temp Read Blocks"
 	TEMP_WRITTEN_BLOCKS   = "Temp Written Blocks"
-	TEMP_HIT_BLOCKS       = "Temp Hit Blocks"
 	LOCAL_HIT_BLOCKS      = "Local Hit Blocks"
 	LOCAL_READ_BLOCKS     = "Local Read Blocks"
 	LOCAL_DIRTIED_BLOCKS  = "Local Dirtied Blocks"
@@ -145,4 +144,6 @@ const (
 
 	X_POSITION_FACTOR = "*X Position Factor"
 	Y_POSITION_FACTOR = "*Y Position Factor"
+
+	EXCLUSIVE = "Exclusive "
 )
