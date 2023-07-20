@@ -35,9 +35,17 @@ var operationsMap = map[string]Operation{
 	GROUP_AGGREGATE: {
 		Key: GROUP_KEY,
 	},
+	BITMAP_HEAP_SCAN: {
+		RelationName: RELATION_NAME,
+		Condition:    "Recheck Cond",
+	},
 	"Default": {
 		RelationName: RELATION_NAME,
 		Index:        INDEX_NAME,
 		Filter:       FILTER,
 	},
+}
+
+var filtersMap = map[string]string{
+	HASH_JOIN: ROWS_REMOVED_BY_JOIN_FILTER,
 }

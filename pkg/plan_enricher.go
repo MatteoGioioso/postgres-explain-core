@@ -1,7 +1,5 @@
 package pkg
 
-// https://github.com/dalibo/pev2/blob/652bbc9041fde4f1df7df03e2500c2beaea5c3f5/src/services/plan-service.ts#L108
-
 import (
 	"math"
 	"strings"
@@ -14,14 +12,16 @@ type PlanEnricher struct {
 	maxBlocksWritten float64
 	maxBlocksRead    float64
 	ctes             map[string]Node
+	containsBuffers  bool
 }
 
 func NewPlanEnricher() *PlanEnricher {
 	return &PlanEnricher{
-		maxRows:     0,
-		maxCost:     0,
-		maxDuration: 0,
-		ctes:        map[string]Node{},
+		maxRows:         0,
+		maxCost:         0,
+		maxDuration:     0,
+		ctes:            map[string]Node{},
+		containsBuffers: false,
 	}
 }
 
@@ -36,6 +36,16 @@ func (ps *PlanEnricher) AnalyzePlan(rootNode Node, stats *Stats) {
 	stats.MaxBlocksRead = getMaxBlocksRead(rootNode)
 	stats.MaxBlocksWritten = getMaxBlocksWritten(rootNode)
 	rootNode[CTES] = ps.ctes
+}
+
+func (ps *PlanEnricher) checkBuffers(node Node) {
+	if node[SHARED_HIT_BLOCKS] != nil {
+		ps.containsBuffers = true
+		node[DOES_CONTAIN_BUFFERS] = true
+	}
+
+	ps.containsBuffers = false
+	node[DOES_CONTAIN_BUFFERS] = false
 }
 
 func getMaxBlocksRead(rootNode Node) float64 {
@@ -73,20 +83,26 @@ func IsCTE(node Node) bool {
 }
 
 func (ps *PlanEnricher) processNode(node Node) {
+	ps.checkBuffers(node)
 	ps.calculatePlannerEstimate(node)
 
 	// Iterate over all the node's properties: "Startup Cost", "Planning Time", "Plans", ect...
 	for name, value := range node {
 		// If the key is "Plans", then iterated over all the sub nodes
 		if name == PLANS_PROP {
-			for _, subNode := range value.([]interface{}) {
-				sn := subNode.(Node)
+			for _, child := range value.([]interface{}) {
+				childNode := child.(Node)
 
-				if !IsCTE(sn) && sn[PARENT_RELATIONSHIP] != "InitPlan" && sn[PARENT_RELATIONSHIP] != "SubPlan" {
-					if sn[WORKERS_PLANNED] != nil {
-						sn[WORKERS_PLANNED_BY_GATHER] = sn[WORKERS_PLANNED]
+				// Add workers planned info to parallel nodes (ie. Gather children)
+				if !IsCTE(childNode) && childNode[PARENT_RELATIONSHIP] != "InitPlan" && childNode[PARENT_RELATIONSHIP] != "SubPlan" {
+					if node[WORKERS_PLANNED] != nil {
+						childNode[WORKERS_PLANNED_BY_GATHER] = node[WORKERS_PLANNED]
 					} else {
-						sn[WORKERS_PLANNED_BY_GATHER] = sn[WORKERS_PLANNED_BY_GATHER]
+						childNode[WORKERS_PLANNED_BY_GATHER] = node[WORKERS_PLANNED_BY_GATHER]
+					}
+
+					if node[WORKERS_LAUNCHED] != nil {
+						childNode[WORKERS_LAUNCHED] = node[WORKERS_LAUNCHED]
 					}
 				}
 
@@ -94,17 +110,17 @@ func (ps *PlanEnricher) processNode(node Node) {
 				// { "Node Type": "CTE Scan" }
 				// Instead they just appears as child nodes of root, thus they have to be
 				// grouped and put back in the root node
-				if IsCTE(sn) {
-					subPlanName := strings.ReplaceAll(sn[SUBPLAN_NAME].(string), "CTE ", "")
-					sn[IS_CTE_ROOT] = "true"
-					sn[CTE_SUBPLAN_OF] = subPlanName
-					ps.ctes[subPlanName] = sn
+				if IsCTE(childNode) {
+					subPlanName := strings.ReplaceAll(childNode[SUBPLAN_NAME].(string), "CTE ", "")
+					childNode[IS_CTE_ROOT] = "true"
+					childNode[CTE_SUBPLAN_OF] = subPlanName
+					ps.ctes[subPlanName] = childNode
 				}
 				if node[CTE_SUBPLAN_OF] != nil {
-					sn[CTE_SUBPLAN_OF] = node[CTE_SUBPLAN_OF]
+					childNode[CTE_SUBPLAN_OF] = node[CTE_SUBPLAN_OF]
 				}
 
-				ps.processNode(sn)
+				ps.processNode(childNode)
 			}
 		}
 	}
@@ -134,7 +150,7 @@ func (ps *PlanEnricher) getMaximum(key string, value interface{}) {
 		return
 	}
 
-	if key == ACTUAL_ROWS_PROP && ps.maxRows < valueFloat {
+	if key == ACTUAL_ROWS && ps.maxRows < valueFloat {
 		ps.maxRows = valueFloat
 	}
 
@@ -155,10 +171,10 @@ func (ps *PlanEnricher) findOutlierNodes(node Node) {
 	if node[ACTUAL_COST_PROP] == ps.maxCost {
 		node[COSTLIEST_NODE_PROP] = true
 	}
-	if node[ACTUAL_ROWS_PROP] == ps.maxRows {
+	if node[ACTUAL_ROWS] == ps.maxRows {
 		node[LARGEST_NODE_PROP] = true
 	}
-	if node[ACTUAL_DURATION_PROP] == ps.maxDuration {
+	if node[ACTUAL_DURATION] == ps.maxDuration {
 		node[SLOWEST_NODE_PROP] = true
 	}
 
@@ -172,18 +188,16 @@ func (ps *PlanEnricher) findOutlierNodes(node Node) {
 }
 
 func (ps *PlanEnricher) calculatePlannerEstimate(node Node) {
-	if node[ACTUAL_ROWS_PROP] != nil && node[PLAN_ROWS_PROP] != nil {
+	if node[ACTUAL_ROWS] != nil && node[PLAN_ROWS] != nil {
 		node[PLANNER_ESTIMATE_DIRECTION] = EstimateDirectionNone
-		node[PLANNER_ESTIMATE_FACTOR] = float64(0)
+		node[PLANNER_ESTIMATE_FACTOR] = node[PLAN_ROWS].(float64) / node[ACTUAL_ROWS].(float64)
 
-		if node[ACTUAL_ROWS_PROP].(float64) < node[PLAN_ROWS_PROP].(float64) {
+		if node[ACTUAL_ROWS].(float64) < node[PLAN_ROWS].(float64) {
 			node[PLANNER_ESTIMATE_DIRECTION] = EstimateDirectionOver
-			node[PLANNER_ESTIMATE_FACTOR] = node[PLAN_ROWS_PROP].(float64) / node[ACTUAL_ROWS_PROP].(float64)
 		}
 
-		if node[ACTUAL_ROWS_PROP].(float64) > node[PLAN_ROWS_PROP].(float64) {
+		if node[ACTUAL_ROWS].(float64) > node[PLAN_ROWS].(float64) {
 			node[PLANNER_ESTIMATE_DIRECTION] = EstimateDirectionUnder
-			node[PLANNER_ESTIMATE_FACTOR] = node[ACTUAL_ROWS_PROP].(float64) / node[PLAN_ROWS_PROP].(float64)
 		}
 	} else {
 		node[PLANNER_ESTIMATE_DIRECTION] = EstimateDirectionNone
@@ -205,20 +219,17 @@ func (ps *PlanEnricher) calculatePlannerEstimate(node Node) {
 }
 
 func (ps *PlanEnricher) calculateActuals(node Node) {
-	if node[ACTUAL_TOTAL_TIME_PROP] != nil {
+	if node[ACTUAL_TOTAL_TIME] != nil {
 		// since time is reported for an individual loop, actual duration must be adjusted by number of loops
 		// number of workers is also taken into account
-		workers := 1.0
-		if node[WORKERS_PLANNED_BY_GATHER] != nil {
-			workers = node[WORKERS_PLANNED_BY_GATHER].(float64) + 1.0
-		}
-		node[ACTUAL_TOTAL_TIME_PROP] = (node[ACTUAL_TOTAL_TIME_PROP].(float64) * node[ACTUAL_LOOPS_PROP].(float64)) / workers
-		if node[ACTUAL_STARTUP_TIME_PROP] != nil {
-			node[ACTUAL_STARTUP_TIME_PROP] = (node[ACTUAL_STARTUP_TIME_PROP].(float64) * node[ACTUAL_LOOPS_PROP].(float64)) / workers
+		workers := ps.getWorkers(node)
+		node[ACTUAL_TOTAL_TIME] = (node[ACTUAL_TOTAL_TIME].(float64) * node[ACTUAL_LOOPS].(float64)) / workers
+		if node[ACTUAL_STARTUP_TIME] != nil {
+			node[ACTUAL_STARTUP_TIME] = (node[ACTUAL_STARTUP_TIME].(float64) * node[ACTUAL_LOOPS].(float64)) / workers
 		} else {
-			node[ACTUAL_STARTUP_TIME_PROP] = 0.0
+			node[ACTUAL_STARTUP_TIME] = 0.0
 		}
-		node[EXCLUSIVE_DURATION] = node[ACTUAL_TOTAL_TIME_PROP]
+		node[EXCLUSIVE_DURATION] = node[ACTUAL_TOTAL_TIME]
 
 		duration := (node[EXCLUSIVE_DURATION].(float64)) - ps.childrenDuration(node, 0)
 		if duration > 0 {
@@ -227,7 +238,7 @@ func (ps *PlanEnricher) calculateActuals(node Node) {
 			node[EXCLUSIVE_DURATION] = 0.0
 		}
 	}
-	node[ACTUAL_DURATION_PROP] = node[ACTUAL_TOTAL_TIME_PROP]
+	node[ACTUAL_DURATION] = node[ACTUAL_TOTAL_TIME]
 	node[ACTUAL_COST_PROP] = node[TOTAL_COST_PROP]
 
 	if node[FILTER] == nil {
@@ -235,22 +246,34 @@ func (ps *PlanEnricher) calculateActuals(node Node) {
 	}
 
 	for _, name := range []string{
-		ACTUAL_ROWS_PROP,
-		PLAN_ROWS_PROP,
+		ACTUAL_ROWS,
+		PLAN_ROWS,
 		ROWS_REMOVED_BY_FILTER,
 		ROWS_REMOVED_BY_JOIN_FILTER,
 	} {
 		if node[name] != nil {
 			loops := 1.0
-			if node[ACTUAL_LOOPS_PROP] != nil {
-				loops = node[ACTUAL_LOOPS_PROP].(float64)
+			if node[ACTUAL_LOOPS] != nil {
+				loops = node[ACTUAL_LOOPS].(float64)
 			}
 
-			node[name] = node[name].(float64) * loops
+			if ps.getWorkers(node) > 1 {
+				node[name+REVISED] = node[name].(float64)
+			} else {
+				node[name+REVISED] = node[name].(float64) * loops
+			}
 		} else {
-			node[name] = 0.0
+			node[name+REVISED] = 0.0
 		}
 	}
+}
+
+func (ps *PlanEnricher) getWorkers(node Node) float64 {
+	workers := 1.0
+	if node[WORKERS_PLANNED_BY_GATHER] != nil {
+		workers = node[WORKERS_PLANNED_BY_GATHER].(float64) + 1.0
+	}
+	return workers
 }
 
 // Any node reports total of what it used itself, plus all that its sub-nodes used

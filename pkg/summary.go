@@ -36,44 +36,51 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 		NodeId:       id,
 		NodeParentId: parentId,
 		Level:        level,
-		Operation:    node[NODE_TYPE_PROP].(string),
+		Operation:    node[NODE_TYPE].(string),
 		Scopes:       s.scopes(node),
-		Inclusive:    node[ACTUAL_TOTAL_TIME_PROP].(float64),
-		Loops:        node[ACTUAL_LOOPS_PROP].(float64),
+		Loops:        node[ACTUAL_LOOPS].(float64),
+		Inclusive:    node[ACTUAL_TOTAL_TIME].(float64),
 		Exclusive:    node[EXCLUSIVE_DURATION].(float64),
 		Rows: Rows{
-			Total:               node[ACTUAL_ROWS_PROP].(float64),
-			PlannedRows:         node[PLAN_ROWS_PROP].(float64),
-			Removed:             node[ROWS_REMOVED_BY_FILTER].(float64),
-			Filters:             node[FILTER].(string),
+			Total:               node[ACTUAL_ROWS+REVISED].(float64),
+			TotalPerNode:        node[ACTUAL_ROWS+REVISED].(float64),
+			PlannedRows:         node[PLAN_ROWS].(float64),
+			Removed:             getRowsRemovedByFilter(node),
 			EstimationFactor:    node[PLANNER_ESTIMATE_FACTOR].(float64),
 			EstimationDirection: node[PLANNER_ESTIMATE_DIRECTION].(string),
 		},
 		ExecutionTime: stats.ExecutionTime,
-		Buffers: Buffers{
-			EffectiveBlocksRead:    getEffectiveBlocksRead(node),
-			EffectiveBlocksWritten: getEffectiveBlocksWritten(node),
-		},
 		Costs: Costs{
 			StartupCost: node[STARTUP_COST].(float64),
 			TotalCost:   node[TOTAL_COST_PROP].(float64),
 			PlanWidth:   node[PLAN_WIDTH].(float64),
 		},
+		Workers:            Workers{},
+		DoesContainBuffers: node[DOES_CONTAIN_BUFFERS].(bool),
 	}
 
-	if node[SHARED_HIT_BLOCKS] != nil {
+	if node[WORKERS_PLANNED_BY_GATHER] != nil {
+		row.Workers.Planned = node[WORKERS_PLANNED_BY_GATHER].(float64)
+		row.Workers.Launched = node[WORKERS_LAUNCHED].(float64)
+	}
+
+	if node[DOES_CONTAIN_BUFFERS].(bool) {
+		row.Buffers = Buffers{}
+		row.Buffers.EffectiveBlocksRead = getEffectiveBlocksRead(node)
+		row.Buffers.EffectiveBlocksWritten = getEffectiveBlocksWritten(node)
+
 		row.Buffers.Reads = node[SHARED_READ_BLOCKS].(float64)
 		row.Buffers.Written = node[SHARED_WRITTEN_BLOCKS].(float64)
 		row.Buffers.Hits = node[SHARED_HIT_BLOCKS].(float64)
+		row.Buffers.Dirtied = node[SHARED_DIRTIED_BLOCKS].(float64)
 
 		if node[EXCLUSIVE+SHARED_READ_BLOCKS] != nil {
 			row.Buffers.ExclusiveReads = node[EXCLUSIVE+SHARED_READ_BLOCKS].(float64)
 			row.Buffers.ExclusiveWritten = node[EXCLUSIVE+SHARED_WRITTEN_BLOCKS].(float64)
 			row.Buffers.ExclusiveHits = node[EXCLUSIVE+SHARED_HIT_BLOCKS].(float64)
+			row.Buffers.ExclusiveDirtied = node[EXCLUSIVE+SHARED_DIRTIED_BLOCKS].(float64)
 		}
-	}
 
-	if node[TEMP_READ_BLOCKS] != nil {
 		row.Buffers.TempReads = node[TEMP_READ_BLOCKS].(float64)
 		row.Buffers.TempWritten = node[TEMP_WRITTEN_BLOCKS].(float64)
 
@@ -81,17 +88,30 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 			row.Buffers.ExclusiveTempReads = node[EXCLUSIVE+TEMP_READ_BLOCKS].(float64)
 			row.Buffers.ExclusiveTempWritten = node[EXCLUSIVE+TEMP_WRITTEN_BLOCKS].(float64)
 		}
+
+		row.Buffers.Reads = node[LOCAL_READ_BLOCKS].(float64)
+		row.Buffers.Written = node[LOCAL_WRITTEN_BLOCKS].(float64)
+		row.Buffers.Hits = node[LOCAL_HIT_BLOCKS].(float64)
+		row.Buffers.Dirtied = node[LOCAL_DIRTIED_BLOCKS].(float64)
+
+		if node[EXCLUSIVE+LOCAL_READ_BLOCKS] != nil {
+			row.Buffers.ExclusiveReads = node[EXCLUSIVE+LOCAL_READ_BLOCKS].(float64)
+			row.Buffers.ExclusiveWritten = node[EXCLUSIVE+LOCAL_WRITTEN_BLOCKS].(float64)
+			row.Buffers.ExclusiveHits = node[EXCLUSIVE+LOCAL_HIT_BLOCKS].(float64)
+			row.Buffers.ExclusiveDirtied = node[EXCLUSIVE+LOCAL_DIRTIED_BLOCKS].(float64)
+		}
 	}
 
 	if node[CTE_SUBPLAN_OF] != nil {
 		row.SubPlanOf = node[CTE_SUBPLAN_OF].(string)
+		row.ParentPlanId = s.ctes[node[CTE_SUBPLAN_OF].(string)].id
 	}
 
 	s.planTable = append(s.planTable, row)
 
 	// If the node is a CTE assign it to the CTEs map, the map will later be used to get the parentId in case the node
 	// is part of a CTE
-	if node[NODE_TYPE_PROP].(string) == CTE_SCAN {
+	if node[NODE_TYPE].(string) == CTE_SCAN {
 		s.ctes[node[CTE_NAME].(string)] = cte{
 			id:    id,
 			level: level,
@@ -110,7 +130,7 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 }
 
 func (s *Summary) scopes(node Node) NodeScopes {
-	operation := node[NODE_TYPE_PROP].(string)
+	operation := node[NODE_TYPE].(string)
 	op, ok := operationsMap[operation]
 	if !ok {
 		op = operationsMap["Default"]
@@ -167,4 +187,14 @@ func getEffectiveBlocksWritten(node Node) float64 {
 	} else {
 		return node[EXCLUSIVE+SHARED_WRITTEN_BLOCKS].(float64)
 	}
+}
+
+func getRowsRemovedByFilter(node Node) float64 {
+	op := node[NODE_TYPE].(string)
+	filter, ok := filtersMap[op]
+	if !ok {
+		return node[ROWS_REMOVED_BY_FILTER+REVISED].(float64)
+	}
+
+	return node[filter+REVISED].(float64)
 }

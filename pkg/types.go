@@ -53,49 +53,62 @@ type Costs struct {
 
 type Rows struct {
 	Total               float64 `json:"total"`
+	TotalPerNode        float64 `json:"total_per_node"`
 	PlannedRows         float64 `json:"planned_rows"`
 	Removed             float64 `json:"removed"`
-	Filters             string  `json:"filters"`
 	EstimationFactor    float64 `json:"estimation_factor"`
 	EstimationDirection string  `json:"estimation_direction"`
 }
 
 type Buffers struct {
-	Reads       float64 `json:"reads"`
-	Written     float64 `json:"written"`
-	Hits        float64 `json:"hits"`
-	Dirtied     float64 `json:"dirtied"`
+	Reads   float64 `json:"reads"`
+	Written float64 `json:"written"`
+	Hits    float64 `json:"hits"`
+	Dirtied float64 `json:"dirtied"`
+
 	TempReads   float64 `json:"temp_reads"`
 	TempWritten float64 `json:"temp_written"`
 	TempHits    float64 `json:"temp_hits"`
 
-	ExclusiveReads       float64 `json:"exclusive_reads"`
-	ExclusiveWritten     float64 `json:"exclusive_written"`
-	ExclusiveHits        float64 `json:"exclusive_hits"`
-	ExclusiveDirtied     float64 `json:"exclusive_dirtied"`
+	ExclusiveReads   float64 `json:"exclusive_reads"`
+	ExclusiveWritten float64 `json:"exclusive_written"`
+	ExclusiveHits    float64 `json:"exclusive_hits"`
+	ExclusiveDirtied float64 `json:"exclusive_dirtied"`
+
 	ExclusiveTempReads   float64 `json:"exclusive_temp_reads"`
 	ExclusiveTempWritten float64 `json:"exclusive_temp_written"`
-	ExclusiveTempHits    float64 `json:"exclusive_temp_hits"`
+
+	ExclusiveLocalReads   float64 `json:"exclusive_local_reads"`
+	ExclusiveLocalWritten float64 `json:"exclusive_local_written"`
+	ExclusiveLocalHits    float64 `json:"exclusive_local_hits"`
 
 	EffectiveBlocksRead    float64 `json:"effective_blocks_read"`
 	EffectiveBlocksWritten float64 `json:"effective_blocks_written"`
 }
 
+type Workers struct {
+	Launched float64 `json:"launched"`
+	Planned  float64 `json:"planned"`
+}
+
 type PlanRow struct {
-	NodeId        string     `json:"node_id"`
-	NodeParentId  string     `json:"node_parent_id"`
-	Operation     string     `json:"operation"`
-	Level         int        `json:"level"`
-	Branch        string     `json:"branch"`
-	Scopes        NodeScopes `json:"scopes"`
-	Inclusive     float64    `json:"inclusive"`
-	Loops         float64    `json:"loops"`
-	Rows          Rows       `json:"rows"`
-	Costs         Costs      `json:"costs"`
-	Exclusive     float64    `json:"exclusive"`
-	ExecutionTime float64    `json:"execution_time"`
-	Buffers       Buffers    `json:"buffers"`
-	SubPlanOf     string     `json:"sub_plan_of"`
+	NodeId             string     `json:"node_id"`
+	NodeParentId       string     `json:"node_parent_id"`
+	Operation          string     `json:"operation"`
+	Level              int        `json:"level"`
+	Branch             string     `json:"branch"`
+	Scopes             NodeScopes `json:"scopes"`
+	Inclusive          float64    `json:"inclusive"`
+	Loops              float64    `json:"loops"`
+	Rows               Rows       `json:"rows"`
+	Costs              Costs      `json:"costs"`
+	Exclusive          float64    `json:"exclusive"`
+	ExecutionTime      float64    `json:"execution_time"`
+	Buffers            Buffers    `json:"buffers"`
+	SubPlanOf          string     `json:"sub_plan_of"`
+	ParentPlanId       string     `json:"parent_plan_id"`
+	DoesContainBuffers bool       `json:"does_contain_buffers"`
+	Workers            Workers    `json:"workers"`
 }
 
 type Operation struct {
