@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"math"
+	"reflect"
 	"strings"
 )
 
@@ -42,44 +43,11 @@ func (ps *PlanEnricher) checkBuffers(node Node) {
 	if node[SHARED_HIT_BLOCKS] != nil {
 		ps.containsBuffers = true
 		node[DOES_CONTAIN_BUFFERS] = true
+		return
 	}
 
 	ps.containsBuffers = false
 	node[DOES_CONTAIN_BUFFERS] = false
-}
-
-func getMaxBlocksRead(rootNode Node) float64 {
-	sum := 0.0
-	if rootNode[SHARED_READ_BLOCKS] != nil {
-		sum += rootNode[SHARED_READ_BLOCKS].(float64)
-	}
-	if rootNode[TEMP_READ_BLOCKS] != nil {
-		sum += rootNode[TEMP_READ_BLOCKS].(float64)
-	}
-	if rootNode[LOCAL_READ_BLOCKS] != nil {
-		sum += rootNode[LOCAL_READ_BLOCKS].(float64)
-	}
-
-	return sum
-}
-
-func getMaxBlocksWritten(rootNode Node) float64 {
-	sum := 0.0
-	if rootNode[SHARED_WRITTEN_BLOCKS] != nil {
-		sum += rootNode[SHARED_WRITTEN_BLOCKS].(float64)
-	}
-	if rootNode[TEMP_WRITTEN_BLOCKS] != nil {
-		sum += rootNode[TEMP_WRITTEN_BLOCKS].(float64)
-	}
-	if rootNode[LOCAL_WRITTEN_BLOCKS] != nil {
-		sum += rootNode[LOCAL_WRITTEN_BLOCKS].(float64)
-	}
-
-	return sum
-}
-
-func IsCTE(node Node) bool {
-	return node[PARENT_RELATIONSHIP] == "InitPlan" && strings.HasPrefix(node[SUBPLAN_NAME].(string), "CTE")
 }
 
 func (ps *PlanEnricher) processNode(node Node) {
@@ -150,7 +118,7 @@ func (ps *PlanEnricher) getMaximum(key string, value interface{}) {
 		return
 	}
 
-	if key == ACTUAL_ROWS && ps.maxRows < valueFloat {
+	if key == ACTUAL_ROWS+REVISED && ps.maxRows < valueFloat {
 		ps.maxRows = valueFloat
 	}
 
@@ -260,6 +228,11 @@ func (ps *PlanEnricher) calculateActuals(node Node) {
 			if ps.getWorkers(node) > 1 {
 				node[name+REVISED] = node[name].(float64)
 			} else {
+				// TODO it could be that the parser has a bug in which it will print a string
+				if reflect.TypeOf(node[name]).Name() == "string" {
+					node[name+REVISED] = 0.0
+					continue
+				}
 				node[name+REVISED] = node[name].(float64) * loops
 			}
 		} else {
@@ -295,8 +268,12 @@ func (ps *PlanEnricher) calculateExclusive(node Node) {
 	}
 
 	for _, property := range properties {
-		sum := 0.0
+		if node[property] == nil {
+			node[property] = 0.0
+			continue
+		}
 
+		sum := 0.0
 		exclusiveProp := EXCLUSIVE + property
 		node[exclusiveProp] = node[property]
 
@@ -311,9 +288,7 @@ func (ps *PlanEnricher) calculateExclusive(node Node) {
 			}
 		}
 
-		if node[property] != nil {
-			node[exclusiveProp] = node[property].(float64) - sum
-		}
+		node[exclusiveProp] = node[property].(float64) - sum
 	}
 }
 

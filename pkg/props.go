@@ -34,9 +34,6 @@ const (
 	PARENT_RELATIONSHIP = "Parent Relationship"
 	SUBPLAN_NAME        = "Subplan Name"
 
-	CTE_SCAN_PROP = "CTE Scan"
-	CTE_NAME_PROP = "CTE Name"
-
 	ARRAY_INDEX_KEY = "arrayIndex"
 
 	RELATION_NAME         = "Relation Name"
@@ -85,22 +82,6 @@ const (
 	ROWS_REMOVED_BY_JOIN_FILTER = "Rows Removed by Join Filter"
 	FILTER                      = "Filter"
 
-	EXCLUSIVE_SHARED_HIT_BLOCKS     = "*Shared Hit Blocks (exclusive)"
-	EXCLUSIVE_SHARED_READ_BLOCKS    = "*Shared Read Blocks (exclusive)"
-	EXCLUSIVE_SHARED_DIRTIED_BLOCKS = "*Shared Dirtied Blocks (exclusive)"
-	EXCLUSIVE_SHARED_WRITTEN_BLOCKS = "*Shared Written Blocks (exclusive)"
-	EXCLUSIVE_TEMP_READ_BLOCKS      = "*Temp Read Blocks (exclusive)"
-	EXCLUSIVE_TEMP_WRITTEN_BLOCKS   = "*Temp Written Blocks (exclusive)"
-	EXCLUSIVE_LOCAL_HIT_BLOCKS      = "*Local Hit Blocks (exclusive)"
-	EXCLUSIVE_LOCAL_READ_BLOCKS     = "*Local Read Blocks (exclusive)"
-	EXCLUSIVE_LOCAL_DIRTIED_BLOCKS  = "*Local Dirtied Blocks (exclusive)"
-	EXCLUSIVE_LOCAL_WRITTEN_BLOCKS  = "*Local Written Blocks (exclusive)"
-
-	EXCLUSIVE_IO_READ_TIME  = "*I/O Read Time (exclusive)"
-	EXCLUSIVE_IO_WRITE_TIME = "*I/O Write Time (exclusive)"
-	AVERAGE_IO_READ_TIME    = "*I/O Read Speed (exclusive)"
-	AVERAGE_IO_WRITE_TIME   = "*I/O Write Speed (exclusive)"
-
 	WORKERS_PLANNED_BY_GATHER = "*Workers Planned By Gather"
 
 	CTE_SCAN = "CTE Scan"
@@ -138,7 +119,6 @@ const (
 	Y_POSITION_FACTOR = "*Y Position Factor"
 
 	EXCLUSIVE            = "Exclusive "
-	PER_WORKER           = " Per Worker"
 	REVISED              = " Revised"
 	DOES_CONTAIN_BUFFERS = "Does contain buffers"
 )
