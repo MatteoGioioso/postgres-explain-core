@@ -26,14 +26,14 @@ type Plans []struct {
 	Plan map[string]interface{} `json:"Plan"`
 }
 
-type Explained struct {
-	Summary []PlanRow `json:"summary"`
-	Stats   Stats     `json:"stats"`
+type IndexesStats struct {
+	Indexes map[string]IndexStats `json:"indexes"`
 }
 
-type Position struct {
-	XFactor float64 `json:"x_factor"`
-	YFactor float64 `json:"y_factor"`
+type Explained struct {
+	Summary      []PlanRow    `json:"summary"`
+	Stats        Stats        `json:"stats"`
+	IndexesStats IndexesStats `json:"indexes_stats"`
 }
 
 type NodeScopes struct {
@@ -123,4 +123,16 @@ type Operation struct {
 type Scope struct {
 	Name    string `json:"name"`
 	Prepend string `json:"prepend"`
+}
+
+type IndexNode struct {
+	Id            string
+	Type          string
+	ExclusiveTime float64
+	Condition     string
+}
+
+type IndexStats struct {
+	Nodes     []IndexNode `json:"indexes"`
+	TotalTime float64     `json:"total_time"`
 }

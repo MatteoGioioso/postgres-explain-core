@@ -7,35 +7,19 @@ import (
 )
 
 type PlanEnricher struct {
-	maxRows          float64
-	maxCost          float64
-	maxDuration      float64
-	maxBlocksWritten float64
-	maxBlocksRead    float64
-	ctes             map[string]Node
-	containsBuffers  bool
+	ctes            map[string]Node
+	containsBuffers bool
 }
 
 func NewPlanEnricher() *PlanEnricher {
 	return &PlanEnricher{
-		maxRows:         0,
-		maxCost:         0,
-		maxDuration:     0,
 		ctes:            map[string]Node{},
 		containsBuffers: false,
 	}
 }
 
-func (ps *PlanEnricher) AnalyzePlan(rootNode Node, stats *Stats) {
+func (ps *PlanEnricher) AnalyzePlan(rootNode Node) {
 	ps.processNode(rootNode)
-
-	ps.calculateMaximums(rootNode)
-	ps.findOutlierNodes(rootNode)
-	stats.MaxRows = ps.maxRows
-	stats.MaxCost = ps.maxCost
-	stats.MaxDuration = ps.maxDuration
-	stats.MaxBlocksRead = getMaxBlocksRead(rootNode)
-	stats.MaxBlocksWritten = getMaxBlocksWritten(rootNode)
 	rootNode[CTES] = ps.ctes
 }
 
@@ -95,64 +79,6 @@ func (ps *PlanEnricher) processNode(node Node) {
 
 	ps.calculateActuals(node)
 	ps.calculateExclusive(node)
-}
-
-func (ps *PlanEnricher) calculateMaximums(node Node) {
-	for name, value := range node {
-		ps.getMaximum(name, value)
-		if name == PLANS_PROP {
-			for _, subNode := range value.([]interface{}) {
-				sn := subNode.(Node)
-				ps.calculateMaximums(sn)
-			}
-		}
-	}
-}
-
-func (ps *PlanEnricher) getMaximum(key string, value interface{}) {
-	var valueFloat float64
-	switch value.(type) {
-	case float64:
-		valueFloat = value.(float64)
-	default:
-		return
-	}
-
-	if key == ACTUAL_ROWS+REVISED && ps.maxRows < valueFloat {
-		ps.maxRows = valueFloat
-	}
-
-	if key == TOTAL_COST_PROP && ps.maxCost < valueFloat {
-		ps.maxCost = valueFloat
-	}
-
-	if key == EXCLUSIVE_DURATION && ps.maxDuration < valueFloat {
-		ps.maxDuration = valueFloat
-	}
-}
-
-func (ps *PlanEnricher) findOutlierNodes(node Node) {
-	node[SLOWEST_NODE_PROP] = false
-	node[LARGEST_NODE_PROP] = false
-	node[COSTLIEST_NODE_PROP] = false
-
-	if node[ACTUAL_COST_PROP] == ps.maxCost {
-		node[COSTLIEST_NODE_PROP] = true
-	}
-	if node[ACTUAL_ROWS] == ps.maxRows {
-		node[LARGEST_NODE_PROP] = true
-	}
-	if node[ACTUAL_DURATION] == ps.maxDuration {
-		node[SLOWEST_NODE_PROP] = true
-	}
-
-	for key, value := range node {
-		if key == PLANS_PROP {
-			for _, subNode := range value.([]interface{}) {
-				ps.findOutlierNodes(subNode.(Node))
-			}
-		}
-	}
 }
 
 func (ps *PlanEnricher) calculatePlannerEstimate(node Node) {
