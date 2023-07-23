@@ -16,21 +16,6 @@ func NewStatsGather() *StatsGather {
 	}
 }
 
-func (s *StatsGather) ComputeStats(node Node) Stats {
-	s.calculateMaximums(node)
-	s.findOutlierNodes(node)
-
-	return Stats{
-		ExecutionTime:    s.ExecutionTime,
-		PlanningTime:     s.PlanningTime,
-		MaxRows:          s.MaxRows,
-		MaxDuration:      s.MaxDuration,
-		MaxCost:          s.MaxCost,
-		MaxBlocksRead:    getMaxBlocksRead(node),
-		MaxBlocksWritten: getMaxBlocksWritten(node),
-	}
-}
-
 func (s *StatsGather) GetStatsFromPlans(plans string) error {
 	type Plans []StatsFromPlan
 
@@ -50,13 +35,43 @@ func (s *StatsGather) GetStatsFromPlans(plans string) error {
 	return nil
 }
 
+func (s *StatsGather) ComputeStats(node Node) Stats {
+	s.calculateMaximums(node)
+	s.findOutlierNodes(node)
+
+	return Stats{
+		ExecutionTime:    s.ExecutionTime,
+		PlanningTime:     s.PlanningTime,
+		MaxRows:          s.MaxRows,
+		MaxDuration:      s.MaxDuration,
+		MaxCost:          s.MaxCost,
+		MaxBlocksRead:    getMaxBlocksRead(node),
+		MaxBlocksWritten: getMaxBlocksWritten(node),
+	}
+}
+
 func (s *StatsGather) ComputeIndexesStats(node Node) IndexesStats {
+	stats := s.computeIndexesStats(node)
+	if s.ExecutionTime == 0.0 {
+		return stats
+	}
+
+	for indexName, _ := range stats.Indexes {
+		index := stats.Indexes[indexName]
+		index.Percentage = (index.TotalTime / s.ExecutionTime) * 100
+		stats.Indexes[indexName] = index
+	}
+
+	return stats
+}
+
+func (s *StatsGather) computeIndexesStats(node Node) IndexesStats {
 	if node[INDEX_NAME] != nil {
 		indexName := node[INDEX_NAME].(string)
 
 		indexes := s.IndexesStats.Indexes[indexName]
 		indexes.Nodes = append(indexes.Nodes, IndexNode{
-			Id:            indexName,
+			Id:            node[NODE_ID].(string),
 			Type:          node[NODE_TYPE].(string),
 			ExclusiveTime: node[EXCLUSIVE_DURATION].(float64),
 			Condition:     node[INDEX_CONDITION].(string),
@@ -90,11 +105,9 @@ func (s *StatsGather) findOutlierNodes(node Node) {
 		node[SLOWEST_NODE_PROP] = true
 	}
 
-	for key, value := range node {
-		if key == PLANS_PROP {
-			for _, subNode := range value.([]interface{}) {
-				s.findOutlierNodes(subNode.(Node))
-			}
+	if node[PLANS_PROP] != nil {
+		for _, subNode := range node[PLANS_PROP].([]interface{}) {
+			s.findOutlierNodes(subNode.(Node))
 		}
 	}
 }

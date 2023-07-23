@@ -3,7 +3,6 @@ package pkg
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 )
 
 type cte struct {
@@ -30,7 +29,7 @@ func (s *Summary) Do(node Node, stats Stats) []PlanRow {
 }
 
 func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string) {
-	id := uuid.New().String()
+	id := node[NODE_ID].(string)
 
 	row := PlanRow{
 		NodeId:       id,
@@ -57,6 +56,12 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 		},
 		Workers:            Workers{},
 		DoesContainBuffers: node[DOES_CONTAIN_BUFFERS].(bool),
+	}
+
+	if operation, ok := operationsMap[node[NODE_TYPE].(string)]; ok {
+		if operation.getSpecificProperties != nil {
+			row.NodeTypeSpecificProperties = operation.getSpecificProperties(node)
+		}
 	}
 
 	if node[WORKERS_PLANNED_BY_GATHER] != nil {

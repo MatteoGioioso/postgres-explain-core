@@ -92,23 +92,24 @@ type Workers struct {
 }
 
 type PlanRow struct {
-	NodeId             string     `json:"node_id"`
-	NodeParentId       string     `json:"node_parent_id"`
-	Operation          string     `json:"operation"`
-	Level              int        `json:"level"`
-	Branch             string     `json:"branch"`
-	Scopes             NodeScopes `json:"scopes"`
-	Inclusive          float64    `json:"inclusive"`
-	Loops              float64    `json:"loops"`
-	Rows               Rows       `json:"rows"`
-	Costs              Costs      `json:"costs"`
-	Exclusive          float64    `json:"exclusive"`
-	ExecutionTime      float64    `json:"execution_time"`
-	Buffers            Buffers    `json:"buffers"`
-	SubPlanOf          string     `json:"sub_plan_of"`
-	ParentPlanId       string     `json:"parent_plan_id"`
-	DoesContainBuffers bool       `json:"does_contain_buffers"`
-	Workers            Workers    `json:"workers"`
+	NodeId                     string                 `json:"node_id"`
+	NodeParentId               string                 `json:"node_parent_id"`
+	Operation                  string                 `json:"operation"`
+	Level                      int                    `json:"level"`
+	Branch                     string                 `json:"branch"`
+	Scopes                     NodeScopes             `json:"scopes"`
+	Inclusive                  float64                `json:"inclusive"`
+	Loops                      float64                `json:"loops"`
+	Rows                       Rows                   `json:"rows"`
+	Costs                      Costs                  `json:"costs"`
+	Exclusive                  float64                `json:"exclusive"`
+	ExecutionTime              float64                `json:"execution_time"`
+	Buffers                    Buffers                `json:"buffers"`
+	SubPlanOf                  string                 `json:"sub_plan_of"`
+	ParentPlanId               string                 `json:"parent_plan_id"`
+	DoesContainBuffers         bool                   `json:"does_contain_buffers"`
+	Workers                    Workers                `json:"workers"`
+	NodeTypeSpecificProperties map[string]interface{} `json:"node_type_specific_properties"`
 }
 
 type Operation struct {
@@ -118,6 +119,8 @@ type Operation struct {
 	Key          string `json:"key"`
 	Method       string `json:"method"`
 	Condition    string `json:"condition"`
+
+	getSpecificProperties func(node Node) map[string]interface{}
 }
 
 type Scope struct {
@@ -126,13 +129,14 @@ type Scope struct {
 }
 
 type IndexNode struct {
-	Id            string
-	Type          string
-	ExclusiveTime float64
-	Condition     string
+	Id            string  `json:"id"`
+	Type          string  `json:"type"`
+	ExclusiveTime float64 `json:"exclusive_time"`
+	Condition     string  `json:"condition"`
 }
 
 type IndexStats struct {
-	Nodes     []IndexNode `json:"indexes"`
-	TotalTime float64     `json:"total_time"`
+	Nodes      []IndexNode `json:"indexes"`
+	TotalTime  float64     `json:"total_time"`
+	Percentage float64     `json:"percentage"`
 }

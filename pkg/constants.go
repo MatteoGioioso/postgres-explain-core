@@ -24,6 +24,18 @@ var operationsMap = map[string]Operation{
 	SORT: {
 		Key:    SORT_KEY,
 		Method: SORT_METHOD,
+		getSpecificProperties: func(node Node) map[string]interface{} {
+			props := make(map[string]interface{})
+			if node[SORT_SPACE_TYPE] != nil {
+				props[SORT_SPACE_TYPE] = node[SORT_SPACE_TYPE].(string)
+			}
+
+			if node[SORT_SPACE_USED] != nil {
+				props[SORT_SPACE_USED] = node[SORT_SPACE_USED].(string)
+			}
+
+			return props
+		},
 	},
 	CTE_SCAN: {
 		RelationName: CTE_NAME,

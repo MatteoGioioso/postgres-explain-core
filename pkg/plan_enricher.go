@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"github.com/google/uuid"
 	"math"
 	"reflect"
 	"strings"
@@ -35,6 +36,8 @@ func (ps *PlanEnricher) checkBuffers(node Node) {
 }
 
 func (ps *PlanEnricher) processNode(node Node) {
+	node[NODE_ID] = uuid.New().String()
+
 	ps.checkBuffers(node)
 	ps.calculatePlannerEstimate(node)
 
