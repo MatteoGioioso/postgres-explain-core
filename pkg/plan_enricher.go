@@ -41,42 +41,39 @@ func (ps *PlanEnricher) processNode(node Node) {
 	ps.checkBuffers(node)
 	ps.calculatePlannerEstimate(node)
 
-	// Iterate over all the node's properties: "Startup Cost", "Planning Time", "Plans", ect...
-	for name, value := range node {
-		// If the key is "Plans", then iterated over all the sub nodes
-		if name == PLANS_PROP {
-			for _, child := range value.([]interface{}) {
-				childNode := child.(Node)
+	// If the key is "Plans", then iterated over all the sub nodes
+	if node[PLANS_PROP] != nil {
+		for _, child := range node[PLANS_PROP].([]interface{}) {
+			childNode := child.(Node)
 
-				// Add workers planned info to parallel nodes (ie. Gather children)
-				if !IsCTE(childNode) && childNode[PARENT_RELATIONSHIP] != "InitPlan" && childNode[PARENT_RELATIONSHIP] != "SubPlan" {
-					if node[WORKERS_PLANNED] != nil {
-						childNode[WORKERS_PLANNED_BY_GATHER] = node[WORKERS_PLANNED]
-					} else {
-						childNode[WORKERS_PLANNED_BY_GATHER] = node[WORKERS_PLANNED_BY_GATHER]
-					}
-
-					if node[WORKERS_LAUNCHED] != nil {
-						childNode[WORKERS_LAUNCHED] = node[WORKERS_LAUNCHED]
-					}
+			// Add workers planned info to parallel nodes (ie. Gather children)
+			if !IsCTE(childNode) && childNode[PARENT_RELATIONSHIP] != "InitPlan" && childNode[PARENT_RELATIONSHIP] != "SubPlan" {
+				if node[WORKERS_PLANNED] != nil {
+					childNode[WORKERS_PLANNED_BY_GATHER] = node[WORKERS_PLANNED]
+				} else {
+					childNode[WORKERS_PLANNED_BY_GATHER] = node[WORKERS_PLANNED_BY_GATHER]
 				}
 
-				// Plans belonging to CTEs are not found as direct child of CTEs nodes,
-				// { "Node Type": "CTE Scan" }
-				// Instead they just appears as child nodes of root, thus they have to be
-				// grouped and put back in the root node
-				if IsCTE(childNode) {
-					subPlanName := strings.ReplaceAll(childNode[SUBPLAN_NAME].(string), "CTE ", "")
-					childNode[IS_CTE_ROOT] = "true"
-					childNode[CTE_SUBPLAN_OF] = subPlanName
-					ps.ctes[subPlanName] = childNode
+				if node[WORKERS_LAUNCHED] != nil {
+					childNode[WORKERS_LAUNCHED] = node[WORKERS_LAUNCHED]
 				}
-				if node[CTE_SUBPLAN_OF] != nil {
-					childNode[CTE_SUBPLAN_OF] = node[CTE_SUBPLAN_OF]
-				}
-
-				ps.processNode(childNode)
 			}
+
+			// Plans belonging to CTEs are not found as direct child of CTEs nodes,
+			// { "Node Type": "CTE Scan" }
+			// Instead they just appears as child nodes of root, thus they have to be
+			// grouped and put back in the root node
+			if IsCTE(childNode) {
+				subPlanName := strings.ReplaceAll(childNode[SUBPLAN_NAME].(string), "CTE ", "")
+				childNode[IS_CTE_ROOT] = "true"
+				childNode[CTE_SUBPLAN_OF] = subPlanName
+				ps.ctes[subPlanName] = childNode
+			}
+			if node[CTE_SUBPLAN_OF] != nil {
+				childNode[CTE_SUBPLAN_OF] = node[CTE_SUBPLAN_OF]
+			}
+
+			ps.processNode(childNode)
 		}
 	}
 

@@ -27,7 +27,7 @@ type Plans []struct {
 }
 
 type IndexesStats struct {
-	Indexes map[string]IndexStats `json:"indexes"`
+	Indexes []IndexStats `json:"indexes"`
 }
 
 type Explained struct {
@@ -86,9 +86,17 @@ type Buffers struct {
 	EffectiveBlocksWritten float64 `json:"effective_blocks_written"`
 }
 
+type Worker struct {
+	Number float64 `json:"number"`
+	Loops  float64 `json:"loops"`
+	Rows   float64 `json:"rows"`
+	Time   float64 `json:"time"`
+}
+
 type Workers struct {
-	Launched float64 `json:"launched"`
-	Planned  float64 `json:"planned"`
+	Launched float64  `json:"launched"`
+	Planned  float64  `json:"planned"`
+	List     []Worker `json:"list"`
 }
 
 type PlanRow struct {
@@ -139,4 +147,5 @@ type IndexStats struct {
 	Nodes      []IndexNode `json:"indexes"`
 	TotalTime  float64     `json:"total_time"`
 	Percentage float64     `json:"percentage"`
+	Name       string      `json:"name"`
 }

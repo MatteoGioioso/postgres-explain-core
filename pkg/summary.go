@@ -35,7 +35,7 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 		NodeId:       id,
 		NodeParentId: parentId,
 		Level:        level,
-		Operation:    node[NODE_TYPE].(string),
+		Operation:    s.getFullOperationName(node),
 		Scopes:       s.scopes(node),
 		Loops:        node[ACTUAL_LOOPS].(float64),
 		Inclusive:    node[ACTUAL_TOTAL_TIME].(float64),
@@ -67,6 +67,21 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 	if node[WORKERS_PLANNED_BY_GATHER] != nil {
 		row.Workers.Planned = node[WORKERS_PLANNED_BY_GATHER].(float64)
 		row.Workers.Launched = node[WORKERS_LAUNCHED].(float64)
+	}
+
+	if node[WORKERS] != nil {
+		for _, worker := range node[WORKERS].([]interface{}) {
+			w := worker.(map[string]interface{})
+
+			if w[ACTUAL_ROWS] != nil {
+				row.Workers.List = append(row.Workers.List, Worker{
+					Number: w["Worker Number"].(float64),
+					Loops:  w[ACTUAL_LOOPS].(float64),
+					Rows:   w[ACTUAL_ROWS].(float64),
+					Time:   w[ACTUAL_TOTAL_TIME].(float64),
+				})
+			}
+		}
 	}
 
 	if node[DOES_CONTAIN_BUFFERS].(bool) {
@@ -132,6 +147,14 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 			}
 		}
 	}
+}
+
+func (s *Summary) getFullOperationName(node Node) string {
+	if node[PARALLEL_AWARE] != nil {
+		return fmt.Sprintf("Parallel %s", node[NODE_TYPE].(string))
+	}
+
+	return node[NODE_TYPE].(string)
 }
 
 func (s *Summary) scopes(node Node) NodeScopes {

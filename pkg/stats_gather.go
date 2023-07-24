@@ -3,16 +3,17 @@ package pkg
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 )
 
 type StatsGather struct {
 	Stats
-	IndexesStats IndexesStats
+	indexesStats map[string]IndexStats
 }
 
 func NewStatsGather() *StatsGather {
 	return &StatsGather{
-		IndexesStats: IndexesStats{Indexes: map[string]IndexStats{}},
+		indexesStats: make(map[string]IndexStats),
 	}
 }
 
@@ -51,25 +52,36 @@ func (s *StatsGather) ComputeStats(node Node) Stats {
 }
 
 func (s *StatsGather) ComputeIndexesStats(node Node) IndexesStats {
-	stats := s.computeIndexesStats(node)
-	if s.ExecutionTime == 0.0 {
-		return stats
+	s.computeIndexesStats(node)
+
+	// For only EXPLAIN plans 'Execution Time" is missing
+	if s.ExecutionTime != 0.0 {
+		for indexName, index := range s.indexesStats {
+			index.Percentage = (index.TotalTime / s.ExecutionTime) * 100
+			s.indexesStats[indexName] = index
+		}
 	}
 
-	for indexName, _ := range stats.Indexes {
-		index := stats.Indexes[indexName]
-		index.Percentage = (index.TotalTime / s.ExecutionTime) * 100
-		stats.Indexes[indexName] = index
+	indexesSlice := make([]IndexStats, 0)
+	for indexName, index := range s.indexesStats {
+		index.Name = indexName
+		indexesSlice = append(indexesSlice, index)
 	}
 
-	return stats
+	sort.Slice(indexesSlice, func(i, j int) bool {
+		return indexesSlice[i].TotalTime > indexesSlice[j].TotalTime
+	})
+
+	return IndexesStats{
+		Indexes: indexesSlice,
+	}
 }
 
-func (s *StatsGather) computeIndexesStats(node Node) IndexesStats {
+func (s *StatsGather) computeIndexesStats(node Node) {
 	if node[INDEX_NAME] != nil {
 		indexName := node[INDEX_NAME].(string)
 
-		indexes := s.IndexesStats.Indexes[indexName]
+		indexes := s.indexesStats[indexName]
 		indexes.Nodes = append(indexes.Nodes, IndexNode{
 			Id:            node[NODE_ID].(string),
 			Type:          node[NODE_TYPE].(string),
@@ -78,7 +90,7 @@ func (s *StatsGather) computeIndexesStats(node Node) IndexesStats {
 		})
 		indexes.TotalTime += node[EXCLUSIVE_DURATION].(float64)
 
-		s.IndexesStats.Indexes[indexName] = indexes
+		s.indexesStats[indexName] = indexes
 	}
 
 	if node[PLANS_PROP] != nil {
@@ -86,8 +98,6 @@ func (s *StatsGather) computeIndexesStats(node Node) IndexesStats {
 			s.ComputeIndexesStats(subNode.(Node))
 		}
 	}
-
-	return s.IndexesStats
 }
 
 func (s *StatsGather) findOutlierNodes(node Node) {
