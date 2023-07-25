@@ -3,6 +3,7 @@ package pkg
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -47,4 +48,13 @@ func getMaxBlocksWritten(rootNode Node) float64 {
 
 func IsCTE(node Node) bool {
 	return node[PARENT_RELATIONSHIP] == "InitPlan" && strings.HasPrefix(node[SUBPLAN_NAME].(string), "CTE")
+}
+
+func ConvertStringToFloat64(val string) float64 {
+	float, err := strconv.ParseFloat(val, 64)
+	if err != nil {
+		panic(err)
+	}
+
+	return float
 }

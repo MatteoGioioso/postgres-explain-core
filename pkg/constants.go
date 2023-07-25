@@ -1,7 +1,5 @@
 package pkg
 
-import "strconv"
-
 var operationsMap = map[string]Operation{
 	SEQUENTIAL_SCAN: {
 		RelationName: RELATION_NAME,
@@ -12,12 +10,46 @@ var operationsMap = map[string]Operation{
 		Index:        INDEX_NAME,
 		Filter:       FILTER,
 		Condition:    INDEX_CONDITION,
+		getSpecificProperties: func(node Node) []Property {
+			props := make([]Property, 0)
+
+			if node[HEAP_FETCHES] != nil {
+				props = append(props, Property{
+					ID:          "heap_fetches",
+					Name:        "Heat fetches",
+					Type:        "float",
+					ValueFloat:  ConvertStringToFloat64(node[HEAP_FETCHES].(string)),
+					ValueString: "",
+					Skip:        false,
+					Kind:        quantity,
+				})
+			}
+
+			return props
+		},
 	},
 	INDEX_ONLY_SCAN: {
 		RelationName: RELATION_NAME,
 		Index:        INDEX_NAME,
 		Filter:       FILTER,
 		Condition:    INDEX_CONDITION,
+		getSpecificProperties: func(node Node) []Property {
+			props := make([]Property, 0)
+
+			if node[HEAP_FETCHES] != nil {
+				props = append(props, Property{
+					ID:          "heap_fetches",
+					Name:        "Heat fetches",
+					Type:        "float",
+					ValueFloat:  ConvertStringToFloat64(node[HEAP_FETCHES].(string)),
+					ValueString: "",
+					Skip:        false,
+					Kind:        quantity,
+				})
+			}
+
+			return props
+		},
 	},
 	HASH_JOIN: {
 		Filter:    "Join Filter",
@@ -42,16 +74,12 @@ var operationsMap = map[string]Operation{
 
 			if node[SORT_SPACE_TYPE] != nil {
 				strVal := node[SORT_SPACE_USED].(string)
-				float, err := strconv.ParseFloat(strVal, 64)
-				if err != nil {
-					panic(err)
-				}
 
 				props = append(props, Property{
 					ID:          "sort_space_type",
 					Name:        node[SORT_SPACE_TYPE].(string),
 					Type:        "float",
-					ValueFloat:  float,
+					ValueFloat:  ConvertStringToFloat64(strVal),
 					ValueString: "",
 					Skip:        false,
 					Kind:        disk_size,
