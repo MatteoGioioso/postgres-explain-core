@@ -41,7 +41,6 @@ type NodeScopes struct {
 	Filters   string `json:"filters"`
 	Index     string `json:"index"`
 	Key       string `json:"key"`
-	Method    string `json:"method"`
 	Condition string `json:"condition"`
 }
 
@@ -100,24 +99,24 @@ type Workers struct {
 }
 
 type PlanRow struct {
-	NodeId                     string                 `json:"node_id"`
-	NodeParentId               string                 `json:"node_parent_id"`
-	Operation                  string                 `json:"operation"`
-	Level                      int                    `json:"level"`
-	Branch                     string                 `json:"branch"`
-	Scopes                     NodeScopes             `json:"scopes"`
-	Inclusive                  float64                `json:"inclusive"`
-	Loops                      float64                `json:"loops"`
-	Rows                       Rows                   `json:"rows"`
-	Costs                      Costs                  `json:"costs"`
-	Exclusive                  float64                `json:"exclusive"`
-	ExecutionTime              float64                `json:"execution_time"`
-	Buffers                    Buffers                `json:"buffers"`
-	SubPlanOf                  string                 `json:"sub_plan_of"`
-	ParentPlanId               string                 `json:"parent_plan_id"`
-	DoesContainBuffers         bool                   `json:"does_contain_buffers"`
-	Workers                    Workers                `json:"workers"`
-	NodeTypeSpecificProperties map[string]interface{} `json:"node_type_specific_properties"`
+	NodeId                     string     `json:"node_id"`
+	NodeParentId               string     `json:"node_parent_id"`
+	Operation                  string     `json:"operation"`
+	Level                      int        `json:"level"`
+	Branch                     string     `json:"branch"`
+	Scopes                     NodeScopes `json:"scopes"`
+	Inclusive                  float64    `json:"inclusive"`
+	Loops                      float64    `json:"loops"`
+	Rows                       Rows       `json:"rows"`
+	Costs                      Costs      `json:"costs"`
+	Exclusive                  float64    `json:"exclusive"`
+	ExecutionTime              float64    `json:"execution_time"`
+	Buffers                    Buffers    `json:"buffers"`
+	SubPlanOf                  string     `json:"sub_plan_of"`
+	ParentPlanId               string     `json:"parent_plan_id"`
+	DoesContainBuffers         bool       `json:"does_contain_buffers"`
+	Workers                    Workers    `json:"workers"`
+	NodeTypeSpecificProperties []Property `json:"node_type_specific_properties"`
 }
 
 type Operation struct {
@@ -125,10 +124,9 @@ type Operation struct {
 	Index        string `json:"index"`
 	Filter       string `json:"filter"`
 	Key          string `json:"key"`
-	Method       string `json:"method"`
 	Condition    string `json:"condition"`
 
-	getSpecificProperties func(node Node) map[string]interface{}
+	getSpecificProperties func(node Node) []Property
 }
 
 type Scope struct {
@@ -149,3 +147,21 @@ type IndexStats struct {
 	Percentage float64     `json:"percentage"`
 	Name       string      `json:"name"`
 }
+
+type Property struct {
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Type        string  `json:"type"`
+	ValueFloat  float64 `json:"float"`
+	ValueString string  `json:"string"`
+	Skip        bool    `json:"skip"`
+	Kind        Kind    `json:"kind"`
+}
+
+type Kind = string
+
+const (
+	timing    = Kind("timing")
+	quantity  = Kind("quantity")
+	disk_size = Kind("disk_size")
+)

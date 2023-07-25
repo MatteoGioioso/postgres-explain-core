@@ -54,8 +54,9 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 			TotalCost:   node[TOTAL_COST_PROP].(float64),
 			PlanWidth:   node[PLAN_WIDTH].(float64),
 		},
-		Workers:            Workers{},
-		DoesContainBuffers: node[DOES_CONTAIN_BUFFERS].(bool),
+		Workers:                    Workers{},
+		DoesContainBuffers:         node[DOES_CONTAIN_BUFFERS].(bool),
+		NodeTypeSpecificProperties: make([]Property, 0),
 	}
 
 	if operation, ok := operationsMap[node[NODE_TYPE].(string)]; ok {
@@ -70,18 +71,7 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 	}
 
 	if node[WORKERS] != nil {
-		for _, worker := range node[WORKERS].([]interface{}) {
-			w := worker.(map[string]interface{})
-
-			if w[ACTUAL_ROWS] != nil {
-				row.Workers.List = append(row.Workers.List, Worker{
-					Number: w["Worker Number"].(float64),
-					Loops:  w[ACTUAL_LOOPS].(float64),
-					Rows:   w[ACTUAL_ROWS].(float64),
-					Time:   w[ACTUAL_TOTAL_TIME].(float64),
-				})
-			}
-		}
+		row.Workers.List = s.getWorkersList(node)
 	}
 
 	if node[DOES_CONTAIN_BUFFERS].(bool) {
@@ -149,6 +139,24 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 	}
 }
 
+func (s *Summary) getWorkersList(node Node) []Worker {
+	workersList := make([]Worker, 0)
+	for _, worker := range node[WORKERS].([]interface{}) {
+		w := worker.(map[string]interface{})
+
+		if w[ACTUAL_ROWS] != nil {
+			workersList = append(workersList, Worker{
+				Number: w["Worker Number"].(float64),
+				Loops:  w[ACTUAL_LOOPS].(float64),
+				Rows:   w[ACTUAL_ROWS].(float64),
+				Time:   w[ACTUAL_TOTAL_TIME].(float64),
+			})
+		}
+	}
+
+	return workersList
+}
+
 func (s *Summary) getFullOperationName(node Node) string {
 	if node[PARALLEL_AWARE] != nil {
 		return fmt.Sprintf("Parallel %s", node[NODE_TYPE].(string))
@@ -169,7 +177,6 @@ func (s *Summary) scopes(node Node) NodeScopes {
 		Filters:   convertPropToString(node[op.Filter]),
 		Index:     convertPropToString(node[op.Index]),
 		Key:       convertPropToString(node[op.Key]),
-		Method:    convertPropToString(node[op.Method]),
 		Condition: convertPropToString(node[op.Condition]),
 	}
 }

@@ -1,5 +1,7 @@
 package pkg
 
+import "strconv"
+
 var operationsMap = map[string]Operation{
 	SEQUENTIAL_SCAN: {
 		RelationName: RELATION_NAME,
@@ -22,16 +24,38 @@ var operationsMap = map[string]Operation{
 		Condition: HASH_CONDITION_PROP,
 	},
 	SORT: {
-		Key:    SORT_KEY,
-		Method: SORT_METHOD,
-		getSpecificProperties: func(node Node) map[string]interface{} {
-			props := make(map[string]interface{})
-			if node[SORT_SPACE_TYPE] != nil {
-				props[SORT_SPACE_TYPE] = node[SORT_SPACE_TYPE].(string)
+		Key: SORT_KEY,
+		getSpecificProperties: func(node Node) []Property {
+			props := make([]Property, 0)
+
+			if node[SORT_METHOD] != nil {
+				props = append(props, Property{
+					ID:          "sort_method",
+					Name:        "Sorty method",
+					Type:        "string",
+					ValueFloat:  0,
+					ValueString: node[SORT_METHOD].(string),
+					Skip:        false,
+					Kind:        "",
+				})
 			}
 
-			if node[SORT_SPACE_USED] != nil {
-				props[SORT_SPACE_USED] = node[SORT_SPACE_USED].(string)
+			if node[SORT_SPACE_TYPE] != nil {
+				strVal := node[SORT_SPACE_USED].(string)
+				float, err := strconv.ParseFloat(strVal, 64)
+				if err != nil {
+					panic(err)
+				}
+
+				props = append(props, Property{
+					ID:          "sort_space_type",
+					Name:        node[SORT_SPACE_TYPE].(string),
+					Type:        "float",
+					ValueFloat:  float,
+					ValueString: "",
+					Skip:        false,
+					Kind:        disk_size,
+				})
 			}
 
 			return props
