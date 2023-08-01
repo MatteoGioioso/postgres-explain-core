@@ -64,3 +64,8 @@ func isFloat64(val interface{}) bool {
 	typeOf := reflect.TypeOf(val).Kind()
 	return typeOf == reflect.Float64
 }
+
+func isBool(val interface{}) bool {
+	typeOf := reflect.TypeOf(val).Kind()
+	return typeOf == reflect.Bool
+}

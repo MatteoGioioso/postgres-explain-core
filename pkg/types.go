@@ -65,9 +65,13 @@ type Buffers struct {
 	Hits    float64 `json:"hits"`
 	Dirtied float64 `json:"dirtied"`
 
+	LocalReads   float64 `json:"local_reads"`
+	LocalWritten float64 `json:"local_written"`
+	LocalHits    float64 `json:"local_hits"`
+	LocalDirtied float64 `json:"local_dirtied"`
+
 	TempReads   float64 `json:"temp_reads"`
 	TempWritten float64 `json:"temp_written"`
-	TempHits    float64 `json:"temp_hits"`
 
 	ExclusiveReads   float64 `json:"exclusive_reads"`
 	ExclusiveWritten float64 `json:"exclusive_written"`
@@ -80,9 +84,11 @@ type Buffers struct {
 	ExclusiveLocalReads   float64 `json:"exclusive_local_reads"`
 	ExclusiveLocalWritten float64 `json:"exclusive_local_written"`
 	ExclusiveLocalHits    float64 `json:"exclusive_local_hits"`
+	ExclusiveLocalDirtied float64 `json:"exclusive_local_dirtied"`
 
 	EffectiveBlocksRead    float64 `json:"effective_blocks_read"`
 	EffectiveBlocksWritten float64 `json:"effective_blocks_written"`
+	EffectiveBlocksHits    float64 `json:"effective_blocks_hits"`
 }
 
 type Worker struct {
@@ -164,4 +170,5 @@ const (
 	timing    = Kind("timing")
 	quantity  = Kind("quantity")
 	disk_size = Kind("disk_size")
+	blocks    = Kind("blocks")
 )

@@ -3,6 +3,7 @@ package pkg
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 type cte struct {
@@ -78,7 +79,7 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 		row.Buffers = Buffers{}
 		row.Buffers.EffectiveBlocksRead = getEffectiveBlocksRead(node)
 		row.Buffers.EffectiveBlocksWritten = getEffectiveBlocksWritten(node)
-
+		row.Buffers.EffectiveBlocksHits = getEffectiveBlocksHits(node)
 		row.Buffers.Reads = node[SHARED_READ_BLOCKS].(float64)
 		row.Buffers.Written = node[SHARED_WRITTEN_BLOCKS].(float64)
 		row.Buffers.Hits = node[SHARED_HIT_BLOCKS].(float64)
@@ -99,16 +100,16 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 			row.Buffers.ExclusiveTempWritten = node[EXCLUSIVE+TEMP_WRITTEN_BLOCKS].(float64)
 		}
 
-		row.Buffers.Reads = node[LOCAL_READ_BLOCKS].(float64)
-		row.Buffers.Written = node[LOCAL_WRITTEN_BLOCKS].(float64)
-		row.Buffers.Hits = node[LOCAL_HIT_BLOCKS].(float64)
-		row.Buffers.Dirtied = node[LOCAL_DIRTIED_BLOCKS].(float64)
+		row.Buffers.LocalReads = node[LOCAL_READ_BLOCKS].(float64)
+		row.Buffers.LocalWritten = node[LOCAL_WRITTEN_BLOCKS].(float64)
+		row.Buffers.LocalHits = node[LOCAL_HIT_BLOCKS].(float64)
+		row.Buffers.LocalDirtied = node[LOCAL_DIRTIED_BLOCKS].(float64)
 
 		if node[EXCLUSIVE+LOCAL_READ_BLOCKS] != nil {
-			row.Buffers.ExclusiveReads = node[EXCLUSIVE+LOCAL_READ_BLOCKS].(float64)
-			row.Buffers.ExclusiveWritten = node[EXCLUSIVE+LOCAL_WRITTEN_BLOCKS].(float64)
-			row.Buffers.ExclusiveHits = node[EXCLUSIVE+LOCAL_HIT_BLOCKS].(float64)
-			row.Buffers.ExclusiveDirtied = node[EXCLUSIVE+LOCAL_DIRTIED_BLOCKS].(float64)
+			row.Buffers.ExclusiveLocalReads = node[EXCLUSIVE+LOCAL_READ_BLOCKS].(float64)
+			row.Buffers.ExclusiveLocalWritten = node[EXCLUSIVE+LOCAL_WRITTEN_BLOCKS].(float64)
+			row.Buffers.ExclusiveLocalHits = node[EXCLUSIVE+LOCAL_HIT_BLOCKS].(float64)
+			row.Buffers.ExclusiveLocalDirtied = node[EXCLUSIVE+LOCAL_DIRTIED_BLOCKS].(float64)
 		}
 	}
 
@@ -158,11 +159,19 @@ func (s *Summary) getWorkersList(node Node) []Worker {
 }
 
 func (s *Summary) getFullOperationName(node Node) string {
+	builder := strings.Builder{}
 	if node[PARALLEL_AWARE] != nil {
-		return fmt.Sprintf("Parallel %s", node[NODE_TYPE].(string))
+		if node[PARALLEL_AWARE].(bool) {
+			builder.WriteString("Parallel ")
+		}
 	}
 
-	return node[NODE_TYPE].(string)
+	if node[JOIN_TYPE] != nil {
+		builder.WriteString(fmt.Sprintf("%v ", node[JOIN_TYPE].(string)))
+	}
+
+	builder.WriteString(node[NODE_TYPE].(string))
+	return builder.String()
 }
 
 func (s *Summary) scopes(node Node) NodeScopes {
@@ -205,23 +214,42 @@ func convertPropToString(prop interface{}) string {
 }
 
 func getEffectiveBlocksRead(node Node) float64 {
+	sum := 0.0
 	if node[EXCLUSIVE+LOCAL_READ_BLOCKS] != nil {
-		return node[EXCLUSIVE+LOCAL_READ_BLOCKS].(float64)
-	} else if node[EXCLUSIVE+TEMP_READ_BLOCKS] != nil {
-		return node[EXCLUSIVE+TEMP_READ_BLOCKS].(float64)
-	} else {
-		return node[EXCLUSIVE+SHARED_READ_BLOCKS].(float64)
+		sum += node[EXCLUSIVE+LOCAL_READ_BLOCKS].(float64)
 	}
+	if node[EXCLUSIVE+TEMP_READ_BLOCKS] != nil {
+		sum += node[EXCLUSIVE+TEMP_READ_BLOCKS].(float64)
+	}
+	if node[EXCLUSIVE+SHARED_READ_BLOCKS] != nil {
+		sum += node[EXCLUSIVE+SHARED_READ_BLOCKS].(float64)
+	}
+	return sum
 }
 
 func getEffectiveBlocksWritten(node Node) float64 {
+	sum := 0.0
 	if node[EXCLUSIVE+LOCAL_WRITTEN_BLOCKS] != nil {
-		return node[EXCLUSIVE+LOCAL_WRITTEN_BLOCKS].(float64)
-	} else if node[EXCLUSIVE+TEMP_WRITTEN_BLOCKS] != nil {
-		return node[EXCLUSIVE+TEMP_WRITTEN_BLOCKS].(float64)
-	} else {
-		return node[EXCLUSIVE+SHARED_WRITTEN_BLOCKS].(float64)
+		sum += node[EXCLUSIVE+LOCAL_WRITTEN_BLOCKS].(float64)
 	}
+	if node[EXCLUSIVE+TEMP_WRITTEN_BLOCKS] != nil {
+		sum += node[EXCLUSIVE+TEMP_WRITTEN_BLOCKS].(float64)
+	}
+	if node[EXCLUSIVE+SHARED_WRITTEN_BLOCKS] != nil {
+		sum += node[EXCLUSIVE+SHARED_WRITTEN_BLOCKS].(float64)
+	}
+	return sum
+}
+
+func getEffectiveBlocksHits(node Node) float64 {
+	sum := 0.0
+	if node[EXCLUSIVE+LOCAL_HIT_BLOCKS] != nil {
+		sum += node[EXCLUSIVE+LOCAL_HIT_BLOCKS].(float64)
+	}
+	if node[EXCLUSIVE+SHARED_HIT_BLOCKS] != nil {
+		sum += node[EXCLUSIVE+SHARED_HIT_BLOCKS].(float64)
+	}
+	return sum
 }
 
 func getRowsRemovedByFilter(node Node) float64 {
