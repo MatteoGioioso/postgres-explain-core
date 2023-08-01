@@ -1,6 +1,6 @@
 packages:
-  - path: "github.com/MatteoGioioso/postgres-explain/pkg"
-    output_path: "../src/components/Plan/types.ts"
+  - path: "postgres-explain/core/pkg"
+    output_path: "../web/src/components/CoreModules/Plan/types.ts"
     exclude_files:
       - "utils.go"
       - "summary.go"

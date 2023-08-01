@@ -82,12 +82,17 @@ func (s *StatsGather) computeIndexesStats(node Node) {
 		indexName := node[INDEX_NAME].(string)
 
 		indexes := s.indexesStats[indexName]
-		indexes.Nodes = append(indexes.Nodes, IndexNode{
+		indexNode := IndexNode{
 			Id:            node[NODE_ID].(string),
 			Type:          node[NODE_TYPE].(string),
 			ExclusiveTime: node[EXCLUSIVE_DURATION].(float64),
-			Condition:     node[INDEX_CONDITION].(string),
-		})
+		}
+
+		if node[INDEX_CONDITION] != nil {
+			indexNode.Condition = node[INDEX_CONDITION].(string)
+		}
+
+		indexes.Nodes = append(indexes.Nodes, indexNode)
 		indexes.TotalTime += node[EXCLUSIVE_DURATION].(float64)
 
 		s.indexesStats[indexName] = indexes

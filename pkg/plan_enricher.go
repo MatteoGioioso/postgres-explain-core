@@ -3,7 +3,6 @@ package pkg
 import (
 	"github.com/google/uuid"
 	"math"
-	"reflect"
 	"strings"
 )
 
@@ -154,12 +153,12 @@ func (ps *PlanEnricher) calculateActuals(node Node) {
 			if ps.getWorkers(node) > 1 {
 				node[name+REVISED] = node[name].(float64)
 			} else {
-				// TODO it could be that the parser has a bug in which it will print a string
-				if reflect.TypeOf(node[name]).Name() == "string" {
+				// TODO it could be that the parser has a bug in which sometimes it will print a string
+				if isFloat64(node[name]) {
+					node[name+REVISED] = node[name].(float64) * loops
+				} else {
 					node[name+REVISED] = 0.0
-					continue
 				}
-				node[name+REVISED] = node[name].(float64) * loops
 			}
 		} else {
 			node[name+REVISED] = 0.0

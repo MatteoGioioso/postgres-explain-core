@@ -73,17 +73,22 @@ var operationsMap = map[string]Operation{
 			}
 
 			if node[SORT_SPACE_TYPE] != nil {
-				strVal := node[SORT_SPACE_USED].(string)
-
-				props = append(props, Property{
+				property := Property{
 					ID:          "sort_space_type",
 					Name:        node[SORT_SPACE_TYPE].(string),
 					Type:        "float",
-					ValueFloat:  ConvertStringToFloat64(strVal),
 					ValueString: "",
 					Skip:        false,
 					Kind:        disk_size,
-				})
+				}
+				
+				if isFloat64(node[SORT_SPACE_USED]) {
+					property.ValueFloat = node[SORT_SPACE_USED].(float64)
+				} else {
+					property.ValueFloat = ConvertStringToFloat64(node[SORT_SPACE_USED].(string))
+				}
+
+				props = append(props, property)
 			}
 
 			return props

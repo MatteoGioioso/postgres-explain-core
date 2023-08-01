@@ -3,6 +3,7 @@ package pkg
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -57,4 +58,9 @@ func ConvertStringToFloat64(val string) float64 {
 	}
 
 	return float
+}
+
+func isFloat64(val interface{}) bool {
+	typeOf := reflect.TypeOf(val).Kind()
+	return typeOf == reflect.Float64
 }

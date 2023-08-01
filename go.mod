@@ -1,4 +1,4 @@
-module github.com/MatteoGioioso/postgres-explain
+module postgres-explain/core
 
 go 1.20
 
