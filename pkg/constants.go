@@ -21,7 +21,7 @@ var operationsMap = map[string]Operation{
 					ValueFloat:  ConvertStringToFloat64(node[HEAP_FETCHES].(string)),
 					ValueString: "",
 					Skip:        false,
-					Kind:        quantity,
+					Kind:        Quantity,
 				})
 			}
 
@@ -44,7 +44,7 @@ var operationsMap = map[string]Operation{
 					ValueFloat:  ConvertStringToFloat64(node[HEAP_FETCHES].(string)),
 					ValueString: "",
 					Skip:        false,
-					Kind:        quantity,
+					Kind:        Quantity,
 				})
 			}
 
@@ -79,9 +79,9 @@ var operationsMap = map[string]Operation{
 					Type:        "float",
 					ValueString: "",
 					Skip:        false,
-					Kind:        disk_size,
+					Kind:        DiskSize,
 				}
-				
+
 				if isFloat64(node[SORT_SPACE_USED]) {
 					property.ValueFloat = node[SORT_SPACE_USED].(float64)
 				} else {

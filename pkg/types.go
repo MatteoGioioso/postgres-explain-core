@@ -167,8 +167,8 @@ type Property struct {
 type Kind = string
 
 const (
-	timing    = Kind("timing")
-	quantity  = Kind("quantity")
-	disk_size = Kind("disk_size")
-	blocks    = Kind("blocks")
+	Timing   = Kind("timing")
+	Quantity = Kind("quantity")
+	DiskSize = Kind("disk_size")
+	Blocks   = Kind("blocks")
 )
