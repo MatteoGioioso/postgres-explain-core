@@ -118,3 +118,10 @@ var operationsMap = map[string]Operation{
 var filtersMap = map[string]string{
 	HASH_JOIN: ROWS_REMOVED_BY_JOIN_FILTER,
 }
+
+const (
+	Timing   = Kind("timing")
+	Quantity = Kind("quantity")
+	DiskSize = Kind("disk_size")
+	Blocks   = Kind("blocks")
+)

@@ -27,13 +27,23 @@ type Plans []struct {
 }
 
 type IndexesStats struct {
-	Indexes []IndexStats `json:"indexes"`
+	Indexes []IndexStats `json:"stats"`
+}
+
+type TablesStats struct {
+	Tables []TableStats `json:"stats"`
+}
+
+type NodesStats struct {
+	Nodes []NodeStats `json:"stats"`
 }
 
 type Explained struct {
 	Summary      []PlanRow    `json:"summary"`
 	Stats        Stats        `json:"stats"`
 	IndexesStats IndexesStats `json:"indexes_stats"`
+	TablesStats  TablesStats  `json:"tables_stats"`
+	NodesStats   NodesStats   `json:"nodes_stats"`
 }
 
 type NodeScopes struct {
@@ -106,6 +116,7 @@ type Workers struct {
 
 type PlanRow struct {
 	NodeId                     string     `json:"node_id"`
+	NodeFingerprint            string     `json:"node_fingerprint"`
 	NodeParentId               string     `json:"node_parent_id"`
 	Operation                  string     `json:"operation"`
 	Level                      int        `json:"level"`
@@ -147,11 +158,37 @@ type IndexNode struct {
 	Condition     string  `json:"condition"`
 }
 
+type TableNode struct {
+	Id            string  `json:"id"`
+	Type          string  `json:"type"`
+	ExclusiveTime float64 `json:"exclusive_time"`
+}
+
 type IndexStats struct {
-	Nodes      []IndexNode `json:"indexes"`
+	Nodes      []IndexNode `json:"nodes"`
 	TotalTime  float64     `json:"total_time"`
 	Percentage float64     `json:"percentage"`
 	Name       string      `json:"name"`
+}
+
+type TableStats struct {
+	Nodes      []TableNode `json:"nodes"`
+	TotalTime  float64     `json:"total_time"`
+	Percentage float64     `json:"percentage"`
+	Name       string      `json:"name"`
+}
+
+type NodeStats struct {
+	Nodes      []NodeNode `json:"nodes"`
+	TotalTime  float64    `json:"total_time"`
+	Percentage float64    `json:"percentage"`
+	Name       string     `json:"name"`
+}
+
+type NodeNode struct {
+	Id            string  `json:"id"`
+	Type          string  `json:"type"`
+	ExclusiveTime float64 `json:"exclusive_time"`
 }
 
 type Property struct {
@@ -165,10 +202,3 @@ type Property struct {
 }
 
 type Kind = string
-
-const (
-	Timing   = Kind("timing")
-	Quantity = Kind("quantity")
-	DiskSize = Kind("disk_size")
-	Blocks   = Kind("blocks")
-)

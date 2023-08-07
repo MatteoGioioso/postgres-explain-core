@@ -9,11 +9,15 @@ import (
 type StatsGather struct {
 	Stats
 	indexesStats map[string]IndexStats
+	tablesStats  map[string]TableStats
+	nodesStats   map[string]NodeStats
 }
 
 func NewStatsGather() *StatsGather {
 	return &StatsGather{
 		indexesStats: make(map[string]IndexStats),
+		tablesStats:  make(map[string]TableStats),
+		nodesStats:   make(map[string]NodeStats),
 	}
 }
 
@@ -77,6 +81,58 @@ func (s *StatsGather) ComputeIndexesStats(node Node) IndexesStats {
 	}
 }
 
+func (s *StatsGather) ComputeTablesStats(node Node) TablesStats {
+	s.computeTablesStats(node)
+
+	// For only EXPLAIN plans 'Execution Time" is missing
+	if s.ExecutionTime != 0.0 {
+		for tableName, table := range s.tablesStats {
+			table.Percentage = (table.TotalTime / s.ExecutionTime) * 100
+			s.tablesStats[tableName] = table
+		}
+	}
+
+	tablesSlice := make([]TableStats, 0)
+	for tableName, table := range s.tablesStats {
+		table.Name = tableName
+		tablesSlice = append(tablesSlice, table)
+	}
+
+	sort.Slice(tablesSlice, func(i, j int) bool {
+		return tablesSlice[i].TotalTime > tablesSlice[j].TotalTime
+	})
+
+	return TablesStats{
+		Tables: tablesSlice,
+	}
+}
+
+func (s *StatsGather) ComputeNodesStats(node Node) NodesStats {
+	s.computeNodesStats(node)
+
+	// For only EXPLAIN plans 'Execution Time" is missing
+	if s.ExecutionTime != 0.0 {
+		for nName, n := range s.nodesStats {
+			n.Percentage = (n.TotalTime / s.ExecutionTime) * 100
+			s.nodesStats[nName] = n
+		}
+	}
+
+	nodesSlice := make([]NodeStats, 0)
+	for nName, n := range s.nodesStats {
+		n.Name = nName
+		nodesSlice = append(nodesSlice, n)
+	}
+
+	sort.Slice(nodesSlice, func(i, j int) bool {
+		return nodesSlice[i].TotalTime > nodesSlice[j].TotalTime
+	})
+
+	return NodesStats{
+		Nodes: nodesSlice,
+	}
+}
+
 func (s *StatsGather) computeIndexesStats(node Node) {
 	if node[INDEX_NAME] != nil {
 		indexName := node[INDEX_NAME].(string)
@@ -100,7 +156,55 @@ func (s *StatsGather) computeIndexesStats(node Node) {
 
 	if node[PLANS_PROP] != nil {
 		for _, subNode := range node[PLANS_PROP].([]interface{}) {
-			s.ComputeIndexesStats(subNode.(Node))
+			s.computeIndexesStats(subNode.(Node))
+		}
+	}
+}
+
+func (s *StatsGather) computeTablesStats(node Node) {
+	if node[RELATION_NAME] != nil {
+		tableName := node[RELATION_NAME].(string)
+
+		tables := s.tablesStats[tableName]
+		tableNode := TableNode{
+			Id:            node[NODE_ID].(string),
+			Type:          node[NODE_TYPE].(string),
+			ExclusiveTime: node[EXCLUSIVE_DURATION].(float64),
+		}
+
+		tables.Nodes = append(tables.Nodes, tableNode)
+		tables.TotalTime += node[EXCLUSIVE_DURATION].(float64)
+
+		s.tablesStats[tableName] = tables
+	}
+
+	if node[PLANS_PROP] != nil {
+		for _, subNode := range node[PLANS_PROP].([]interface{}) {
+			s.computeTablesStats(subNode.(Node))
+		}
+	}
+}
+
+func (s *StatsGather) computeNodesStats(node Node) {
+	if node[NODE_TYPE] != nil {
+		nodeType := node[NODE_TYPE].(string)
+
+		nodeStats := s.nodesStats[nodeType]
+		n := NodeNode{
+			Id:            node[NODE_ID].(string),
+			Type:          node[NODE_TYPE].(string),
+			ExclusiveTime: node[EXCLUSIVE_DURATION].(float64),
+		}
+
+		nodeStats.Nodes = append(nodeStats.Nodes, n)
+		nodeStats.TotalTime += node[EXCLUSIVE_DURATION].(float64)
+
+		s.nodesStats[nodeType] = nodeStats
+	}
+
+	if node[PLANS_PROP] != nil {
+		for _, subNode := range node[PLANS_PROP].([]interface{}) {
+			s.computeNodesStats(subNode.(Node))
 		}
 	}
 }

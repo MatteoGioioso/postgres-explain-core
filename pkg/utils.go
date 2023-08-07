@@ -69,3 +69,52 @@ func isBool(val interface{}) bool {
 	typeOf := reflect.TypeOf(val).Kind()
 	return typeOf == reflect.Bool
 }
+
+func getEffectiveBlocksRead(node Node) float64 {
+	sum := 0.0
+	if node[EXCLUSIVE+LOCAL_READ_BLOCKS] != nil {
+		sum += node[EXCLUSIVE+LOCAL_READ_BLOCKS].(float64)
+	}
+	if node[EXCLUSIVE+TEMP_READ_BLOCKS] != nil {
+		sum += node[EXCLUSIVE+TEMP_READ_BLOCKS].(float64)
+	}
+	if node[EXCLUSIVE+SHARED_READ_BLOCKS] != nil {
+		sum += node[EXCLUSIVE+SHARED_READ_BLOCKS].(float64)
+	}
+	return sum
+}
+
+func getEffectiveBlocksWritten(node Node) float64 {
+	sum := 0.0
+	if node[EXCLUSIVE+LOCAL_WRITTEN_BLOCKS] != nil {
+		sum += node[EXCLUSIVE+LOCAL_WRITTEN_BLOCKS].(float64)
+	}
+	if node[EXCLUSIVE+TEMP_WRITTEN_BLOCKS] != nil {
+		sum += node[EXCLUSIVE+TEMP_WRITTEN_BLOCKS].(float64)
+	}
+	if node[EXCLUSIVE+SHARED_WRITTEN_BLOCKS] != nil {
+		sum += node[EXCLUSIVE+SHARED_WRITTEN_BLOCKS].(float64)
+	}
+	return sum
+}
+
+func getEffectiveBlocksHits(node Node) float64 {
+	sum := 0.0
+	if node[EXCLUSIVE+LOCAL_HIT_BLOCKS] != nil {
+		sum += node[EXCLUSIVE+LOCAL_HIT_BLOCKS].(float64)
+	}
+	if node[EXCLUSIVE+SHARED_HIT_BLOCKS] != nil {
+		sum += node[EXCLUSIVE+SHARED_HIT_BLOCKS].(float64)
+	}
+	return sum
+}
+
+func getRowsRemovedByFilter(node Node) float64 {
+	op := node[NODE_TYPE].(string)
+	filter, ok := filtersMap[op]
+	if !ok {
+		return node[ROWS_REMOVED_BY_FILTER+REVISED].(float64)
+	}
+
+	return node[filter+REVISED].(float64)
+}

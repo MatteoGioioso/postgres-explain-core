@@ -6,6 +6,8 @@ packages:
       - "summary.go"
       - "plan_enricher.go"
       - "stats_gather.go"
+      - "compare.go"
+      - "constants.go"
     type_mappings:
       time.Time: "string /* RFC3339 */"
       null.String: "null | string"
