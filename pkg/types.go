@@ -20,6 +20,7 @@ type Stats struct {
 	MaxCost          float64 `json:"max_cost"`
 	MaxBlocksRead    float64 `json:"max_blocks_read"`
 	MaxBlocksWritten float64 `json:"max_blocks_written"`
+	MaxBlocksHit     float64 `json:"max_blocks_hit"`
 }
 
 type Plans []struct {
@@ -202,3 +203,25 @@ type Property struct {
 }
 
 type Kind = string
+
+type ComparisonGeneralStats struct {
+	ExecutionTime    PropComparison `json:"execution_time"`
+	PlanningTime     PropComparison `json:"planning_time"`
+	MaxRows          PropComparison `json:"max_rows"`
+	MaxDuration      PropComparison `json:"max_duration"`
+	MaxCost          PropComparison `json:"max_cost"`
+	MaxBlocksRead    PropComparison `json:"max_blocks_read"`
+	MaxBlocksWritten PropComparison `json:"max_blocks_written"`
+	MaxBlocksHit     PropComparison `json:"max_blocks_hit"`
+}
+
+type Comparison struct {
+	GeneralStats ComparisonGeneralStats `json:"general_stats"`
+}
+
+type PropComparison struct {
+	Previous           float64 `json:"previous"`
+	Optimized          float64 `json:"optimized"`
+	HasImproved        bool    `json:"has_improved"`
+	PercentageImproved float64 `json:"percentage_improved"`
+}

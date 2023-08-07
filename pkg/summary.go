@@ -52,7 +52,7 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 		ExecutionTime: stats.ExecutionTime,
 		Costs: Costs{
 			StartupCost: node[STARTUP_COST].(float64),
-			TotalCost:   node[TOTAL_COST_PROP].(float64),
+			TotalCost:   node[EXCLUSIVE+TOTAL_COST].(float64),
 			PlanWidth:   node[PLAN_WIDTH].(float64),
 		},
 		Workers:                    Workers{},

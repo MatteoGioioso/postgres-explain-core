@@ -47,6 +47,17 @@ func getMaxBlocksWritten(rootNode Node) float64 {
 	return sum
 }
 
+func getMaxBlocksHits(rootNode Node) float64 {
+	sum := 0.0
+	if rootNode[LOCAL_HIT_BLOCKS] != nil {
+		sum += rootNode[LOCAL_HIT_BLOCKS].(float64)
+	}
+	if rootNode[SHARED_HIT_BLOCKS] != nil {
+		sum += rootNode[SHARED_HIT_BLOCKS].(float64)
+	}
+	return sum
+}
+
 func IsCTE(node Node) bool {
 	return node[PARENT_RELATIONSHIP] == "InitPlan" && strings.HasPrefix(node[SUBPLAN_NAME].(string), "CTE")
 }

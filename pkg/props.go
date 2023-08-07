@@ -7,7 +7,7 @@ const (
 	PLAN_ROWS           = "Plan Rows"
 	ACTUAL_TOTAL_TIME   = "Actual Total Time"
 	ACTUAL_LOOPS        = "Actual Loops"
-	TOTAL_COST_PROP     = "Total Cost"
+	TOTAL_COST          = "Total Cost"
 	PLANS_PROP          = "Plans"
 	STARTUP_COST        = "Startup Cost"
 	PLAN_WIDTH          = "Plan Width"

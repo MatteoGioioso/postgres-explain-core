@@ -52,6 +52,7 @@ func (s *StatsGather) ComputeStats(node Node) Stats {
 		MaxCost:          s.MaxCost,
 		MaxBlocksRead:    getMaxBlocksRead(node),
 		MaxBlocksWritten: getMaxBlocksWritten(node),
+		MaxBlocksHit:     getMaxBlocksHits(node),
 	}
 }
 
@@ -256,7 +257,7 @@ func (s *StatsGather) getMaximum(key string, value interface{}) {
 		s.MaxRows = valueFloat
 	}
 
-	if key == TOTAL_COST_PROP && s.MaxCost < valueFloat {
+	if key == TOTAL_COST && s.MaxCost < valueFloat {
 		s.MaxCost = valueFloat
 	}
 

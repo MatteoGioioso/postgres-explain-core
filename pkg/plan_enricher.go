@@ -132,11 +132,16 @@ func (ps *PlanEnricher) calculateActuals(node Node) {
 		}
 	}
 	node[ACTUAL_DURATION] = node[ACTUAL_TOTAL_TIME]
-	node[ACTUAL_COST_PROP] = node[TOTAL_COST_PROP]
+	node[ACTUAL_COST_PROP] = node[TOTAL_COST]
 
 	if node[FILTER] == nil {
 		node[FILTER] = ""
 	}
+	//
+	//if node[TOTAL_COST_PROP] != nil && node[PARENT_RELATIONSHIP] != "InitPlan" {
+	//	node[EXCLUSIVE_COST] = node[TOTAL_COST_PROP]
+	//	node[EXCLUSIVE_COST] = node[EXCLUSIVE_COST].(float64) - node[TOTAL_COST_PROP].(float64)
+	//}
 
 	for _, name := range []string{
 		ACTUAL_ROWS,
@@ -190,6 +195,7 @@ func (ps *PlanEnricher) calculateExclusive(node Node) {
 		LOCAL_WRITTEN_BLOCKS,
 		IO_READ_TIME,
 		IO_WRITE_TIME,
+		TOTAL_COST,
 	}
 
 	for _, property := range properties {
