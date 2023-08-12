@@ -11,6 +11,7 @@ type StatsGather struct {
 	indexesStats map[string]IndexStats
 	tablesStats  map[string]TableStats
 	nodesStats   map[string]NodeStats
+	jit          JIT
 }
 
 func NewStatsGather() *StatsGather {
@@ -36,6 +37,8 @@ func (s *StatsGather) GetStatsFromPlans(plans string) error {
 		s.PlanningTime = p[0].PlanningTime
 		s.ExecutionTime = p[0].ExecutionTime
 	}
+
+	s.jit = p[0].JIT
 
 	return nil
 }
@@ -132,6 +135,10 @@ func (s *StatsGather) ComputeNodesStats(node Node) NodesStats {
 	return NodesStats{
 		Nodes: nodesSlice,
 	}
+}
+
+func (s *StatsGather) ComputeJITStats() JIT {
+	return s.jit
 }
 
 func (s *StatsGather) computeIndexesStats(node Node) {

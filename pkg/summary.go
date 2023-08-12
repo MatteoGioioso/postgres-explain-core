@@ -41,9 +41,14 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 		Loops:        node[ACTUAL_LOOPS].(float64),
 		Inclusive:    node[ACTUAL_TOTAL_TIME].(float64),
 		Exclusive:    node[EXCLUSIVE_DURATION].(float64),
+		Timings: Timings{
+			Inclusive:     node[ACTUAL_TOTAL_TIME].(float64),
+			Exclusive:     node[EXCLUSIVE_DURATION].(float64),
+			ExecutionTime: stats.ExecutionTime,
+		},
 		Rows: Rows{
 			Total:               node[ACTUAL_ROWS+REVISED].(float64),
-			TotalPerNode:        node[ACTUAL_ROWS+REVISED].(float64),
+			TotalAvg:            node[ACTUAL_ROWS].(float64),
 			PlannedRows:         node[PLAN_ROWS].(float64),
 			Removed:             getRowsRemovedByFilter(node),
 			EstimationFactor:    node[PLANNER_ESTIMATE_FACTOR].(float64),

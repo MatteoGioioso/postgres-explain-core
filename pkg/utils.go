@@ -71,9 +71,22 @@ func ConvertStringToFloat64(val string) float64 {
 	return float
 }
 
+func ConvertToFloat64(val interface{}) float64 {
+	if isFloat64(val) {
+		return val.(float64)
+	} else {
+		return ConvertStringToFloat64(val.(string))
+	}
+}
+
 func isFloat64(val interface{}) bool {
 	typeOf := reflect.TypeOf(val).Kind()
 	return typeOf == reflect.Float64
+}
+
+func isString(val interface{}) bool {
+	typeOf := reflect.TypeOf(val).Kind()
+	return typeOf == reflect.String
 }
 
 func isBool(val interface{}) bool {

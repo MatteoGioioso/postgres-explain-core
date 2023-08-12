@@ -137,11 +137,6 @@ func (ps *PlanEnricher) calculateActuals(node Node) {
 	if node[FILTER] == nil {
 		node[FILTER] = ""
 	}
-	//
-	//if node[TOTAL_COST_PROP] != nil && node[PARENT_RELATIONSHIP] != "InitPlan" {
-	//	node[EXCLUSIVE_COST] = node[TOTAL_COST_PROP]
-	//	node[EXCLUSIVE_COST] = node[EXCLUSIVE_COST].(float64) - node[TOTAL_COST_PROP].(float64)
-	//}
 
 	for _, name := range []string{
 		ACTUAL_ROWS,
@@ -156,14 +151,9 @@ func (ps *PlanEnricher) calculateActuals(node Node) {
 			}
 
 			if ps.getWorkers(node) > 1 {
-				node[name+REVISED] = node[name].(float64)
+				node[name+REVISED] = ConvertToFloat64(node[name]) * ps.getWorkers(node)
 			} else {
-				// TODO it could be that the parser has a bug in which sometimes it will print a string
-				if isFloat64(node[name]) {
-					node[name+REVISED] = node[name].(float64) * loops
-				} else {
-					node[name+REVISED] = 0.0
-				}
+				node[name+REVISED] = ConvertToFloat64(node[name]) * loops
 			}
 		} else {
 			node[name+REVISED] = 0.0

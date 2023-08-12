@@ -2,6 +2,23 @@ package pkg
 
 type Node = map[string]interface{}
 
+type JIT struct {
+	Functions int `json:"Functions"`
+	Options   struct {
+		Inlining     bool `json:"Inlining"`
+		Optimization bool `json:"Optimization"`
+		Expressions  bool `json:"Expressions"`
+		Deforming    bool `json:"Deforming"`
+	} `json:"Options"`
+	Timing struct {
+		Generation   float64 `json:"Generation"`
+		Inlining     float64 `json:"Inlining"`
+		Optimization float64 `json:"Optimization"`
+		Emission     float64 `json:"Emission"`
+		Total        float64 `json:"Total"`
+	} `json:"Timing"`
+}
+
 // StatsFromPlan Statistic can be found in different forms
 type StatsFromPlan struct {
 	Plan struct {
@@ -10,6 +27,7 @@ type StatsFromPlan struct {
 	} `json:"plan"`
 	ExecutionTime float64 `json:"Execution Time"`
 	PlanningTime  float64 `json:"Planning Time"`
+	JIT           JIT     `json:"JIT"`
 }
 
 type Stats struct {
@@ -45,6 +63,7 @@ type Explained struct {
 	IndexesStats IndexesStats `json:"indexes_stats"`
 	TablesStats  TablesStats  `json:"tables_stats"`
 	NodesStats   NodesStats   `json:"nodes_stats"`
+	JITStats     JIT          `json:"jit_stats"`
 }
 
 type NodeScopes struct {
@@ -63,7 +82,7 @@ type Costs struct {
 
 type Rows struct {
 	Total               float64 `json:"total"`
-	TotalPerNode        float64 `json:"total_per_node"`
+	TotalAvg            float64 `json:"total_avg"`
 	PlannedRows         float64 `json:"planned_rows"`
 	Removed             float64 `json:"removed"`
 	EstimationFactor    float64 `json:"estimation_factor"`
@@ -115,15 +134,21 @@ type Workers struct {
 	List     []Worker `json:"list"`
 }
 
+type Timings struct {
+	Inclusive     float64 `json:"inclusive"`
+	Exclusive     float64 `json:"exclusive"`
+	ExecutionTime float64 `json:"execution_time"`
+}
+
 type PlanRow struct {
 	NodeId                     string     `json:"node_id"`
 	NodeFingerprint            string     `json:"node_fingerprint"`
 	NodeParentId               string     `json:"node_parent_id"`
 	Operation                  string     `json:"operation"`
 	Level                      int        `json:"level"`
-	Branch                     string     `json:"branch"`
 	Scopes                     NodeScopes `json:"scopes"`
 	Inclusive                  float64    `json:"inclusive"`
+	Timings                    Timings    `json:"timings"`
 	Loops                      float64    `json:"loops"`
 	Rows                       Rows       `json:"rows"`
 	Costs                      Costs      `json:"costs"`
@@ -215,8 +240,51 @@ type ComparisonGeneralStats struct {
 	MaxBlocksHit     PropComparison `json:"max_blocks_hit"`
 }
 
+type NodeComparison struct {
+	NodeId        string               `json:"node_id"`
+	NodeParentId  string               `json:"node_parent_id"`
+	Operation     string               `json:"operation"`
+	Level         int                  `json:"level"`
+	Scopes        NodeScopesComparison `json:"scopes"`
+	Inclusive     PropComparison       `json:"inclusive"`
+	Loops         PropComparison       `json:"loops"`
+	Rows          RowsComparison       `json:"rows"`
+	Costs         CostsComparison      `json:"costs"`
+	Exclusive     PropComparison       `json:"exclusive"`
+	ExecutionTime PropComparison       `json:"execution_time"`
+	Buffers       BuffersComparison    `json:"buffers"`
+}
+
+type NodeScopesComparison struct {
+	Table     PropStringComparison `json:"table"`
+	Filters   PropStringComparison `json:"filters"`
+	Index     PropStringComparison `json:"index"`
+	Key       PropStringComparison `json:"key"`
+	Condition PropStringComparison `json:"condition"`
+}
+
+type RowsComparison struct {
+	Total            PropComparison `json:"total"`
+	PlannedRows      PropComparison `json:"planned_rows"`
+	Removed          PropComparison `json:"removed"`
+	EstimationFactor PropComparison `json:"estimation_factor"`
+}
+
+type BuffersComparison struct {
+	EffectiveBlocksRead    PropComparison `json:"effective_blocks_read"`
+	EffectiveBlocksWritten PropComparison `json:"effective_blocks_written"`
+	EffectiveBlocksHits    PropComparison `json:"effective_blocks_hits"`
+}
+
+type CostsComparison struct {
+	StartupCost PropComparison `json:"startup_cost"`
+	TotalCost   PropComparison `json:"total_cost"`
+	PlanWidth   PropComparison `json:"plan_width"`
+}
+
 type Comparison struct {
 	GeneralStats ComparisonGeneralStats `json:"general_stats"`
+	Nodes        NodeComparison         `json:"nodes"`
 }
 
 type PropComparison struct {
@@ -224,4 +292,9 @@ type PropComparison struct {
 	Optimized          float64 `json:"optimized"`
 	HasImproved        bool    `json:"has_improved"`
 	PercentageImproved float64 `json:"percentage_improved"`
+}
+
+type PropStringComparison struct {
+	Previous  string `json:"previous"`
+	Optimized string `json:"optimized"`
 }

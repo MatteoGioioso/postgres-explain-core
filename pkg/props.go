@@ -110,8 +110,10 @@ const (
 	HASH_AGGREGATE    = "HashAggregate"
 	SORT              = "Sort"
 	FUNCTION_SCAN     = "Function Scan"
-
-	GROUP_AGGREGATE = "GroupAggregate"
+	INCREMENTAL_SORT  = "Incremental Sort"
+	NESTED_LOOP_JOIN  = "Nested Loop Join"
+	MERGE_JOIN        = "Merge Join"
+	GROUP_AGGREGATE   = "GroupAggregate"
 
 	// Others
 
