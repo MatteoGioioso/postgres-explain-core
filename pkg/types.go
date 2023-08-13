@@ -27,7 +27,12 @@ type StatsFromPlan struct {
 	} `json:"plan"`
 	ExecutionTime float64 `json:"Execution Time"`
 	PlanningTime  float64 `json:"Planning Time"`
-	JIT           JIT     `json:"JIT"`
+	JIT           *JIT    `json:"JIT,omitempty"`
+	Triggers      []struct {
+		Name  string  `json:"Trigger Name"`
+		Time  float64 `json:"Time"`
+		Calls string  `json:"Calls"`
+	} `json:"Triggers,omitempty"`
 }
 
 type Stats struct {
@@ -58,12 +63,13 @@ type NodesStats struct {
 }
 
 type Explained struct {
-	Summary      []PlanRow    `json:"summary"`
-	Stats        Stats        `json:"stats"`
-	IndexesStats IndexesStats `json:"indexes_stats"`
-	TablesStats  TablesStats  `json:"tables_stats"`
-	NodesStats   NodesStats   `json:"nodes_stats"`
-	JITStats     JIT          `json:"jit_stats"`
+	Summary       []PlanRow    `json:"summary"`
+	Stats         Stats        `json:"stats"`
+	IndexesStats  IndexesStats `json:"indexes_stats"`
+	TablesStats   TablesStats  `json:"tables_stats"`
+	NodesStats    NodesStats   `json:"nodes_stats"`
+	JITStats      *JIT         `json:"jit_stats"`
+	TriggersStats []Trigger    `json:"triggers_stats"`
 }
 
 type NodeScopes struct {
@@ -297,4 +303,11 @@ type PropComparison struct {
 type PropStringComparison struct {
 	Previous  string `json:"previous"`
 	Optimized string `json:"optimized"`
+}
+
+type Trigger struct {
+	Name    string  `json:"name"`
+	Time    float64 `json:"time"`
+	Calls   float64 `json:"calls"`
+	AvgTime float64 `json:"avg_time"`
 }

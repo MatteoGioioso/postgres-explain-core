@@ -11,7 +11,12 @@ type StatsGather struct {
 	indexesStats map[string]IndexStats
 	tablesStats  map[string]TableStats
 	nodesStats   map[string]NodeStats
-	jit          JIT
+	jit          *JIT
+	triggers     []struct {
+		Name  string  `json:"Trigger Name"`
+		Time  float64 `json:"Time"`
+		Calls string  `json:"Calls"`
+	}
 }
 
 func NewStatsGather() *StatsGather {
@@ -23,9 +28,7 @@ func NewStatsGather() *StatsGather {
 }
 
 func (s *StatsGather) GetStatsFromPlans(plans string) error {
-	type Plans []StatsFromPlan
-
-	p := Plans{}
+	var p []StatsFromPlan
 	if err := json.Unmarshal([]byte(plans), &p); err != nil {
 		return fmt.Errorf("could not unmarshal plan: %v", err)
 	}
@@ -39,6 +42,7 @@ func (s *StatsGather) GetStatsFromPlans(plans string) error {
 	}
 
 	s.jit = p[0].JIT
+	s.triggers = p[0].Triggers
 
 	return nil
 }
@@ -137,8 +141,27 @@ func (s *StatsGather) ComputeNodesStats(node Node) NodesStats {
 	}
 }
 
-func (s *StatsGather) ComputeJITStats() JIT {
+func (s *StatsGather) ComputeJITStats() *JIT {
 	return s.jit
+}
+
+func (s *StatsGather) ComputeTriggersStats() []Trigger {
+	if s.triggers != nil {
+		triggers := make([]Trigger, 0)
+		for _, trigger := range s.triggers {
+			calls := ConvertStringToFloat64(trigger.Calls)
+			triggers = append(triggers, Trigger{
+				Name:    trigger.Name,
+				Time:    trigger.Time,
+				Calls:   calls,
+				AvgTime: trigger.Time / calls,
+			})
+		}
+
+		return triggers
+	}
+
+	return nil
 }
 
 func (s *StatsGather) computeIndexesStats(node Node) {
