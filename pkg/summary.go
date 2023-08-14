@@ -38,17 +38,17 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 		Level:        level,
 		Operation:    s.getFullOperationName(node),
 		Scopes:       s.scopes(node),
-		Loops:        node[ACTUAL_LOOPS].(float64),
-		Inclusive:    node[ACTUAL_TOTAL_TIME].(float64),
-		Exclusive:    node[EXCLUSIVE_DURATION].(float64),
+		Loops:        ConvertToFloat64(node[ACTUAL_LOOPS]),
+		Inclusive:    ConvertToFloat64(node[ACTUAL_TOTAL_TIME]),
+		Exclusive:    ConvertToFloat64(node[EXCLUSIVE_DURATION]),
 		Timings: Timings{
-			Inclusive:     node[ACTUAL_TOTAL_TIME].(float64),
-			Exclusive:     node[EXCLUSIVE_DURATION].(float64),
+			Inclusive:     ConvertToFloat64(node[ACTUAL_TOTAL_TIME]),
+			Exclusive:     ConvertToFloat64(node[EXCLUSIVE_DURATION]),
 			ExecutionTime: stats.ExecutionTime,
 		},
 		Rows: Rows{
 			Total:               node[ACTUAL_ROWS+REVISED].(float64),
-			TotalAvg:            node[ACTUAL_ROWS].(float64),
+			TotalAvg:            ConvertToFloat64(node[ACTUAL_ROWS]),
 			PlannedRows:         node[PLAN_ROWS].(float64),
 			Removed:             getRowsRemovedByFilter(node),
 			EstimationFactor:    node[PLANNER_ESTIMATE_FACTOR].(float64),
@@ -73,7 +73,7 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 
 	if node[WORKERS_PLANNED_BY_GATHER] != nil {
 		row.Workers.Planned = node[WORKERS_PLANNED_BY_GATHER].(float64)
-		row.Workers.Launched = node[WORKERS_LAUNCHED].(float64)
+		row.Workers.Launched = ConvertToFloat64(node[WORKERS_LAUNCHED])
 	}
 
 	if node[WORKERS] != nil {

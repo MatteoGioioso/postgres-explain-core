@@ -72,6 +72,9 @@ func ConvertStringToFloat64(val string) float64 {
 }
 
 func ConvertToFloat64(val interface{}) float64 {
+	if val == nil {
+		return 0.0
+	}
 	if isFloat64(val) {
 		return val.(float64)
 	} else {

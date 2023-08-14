@@ -90,6 +90,7 @@ func (ps *PlanEnricher) calculatePlannerEstimate(node Node) {
 		}
 
 		if node[ACTUAL_ROWS].(float64) > node[PLAN_ROWS].(float64) {
+			node[PLANNER_ESTIMATE_FACTOR] = node[ACTUAL_ROWS].(float64) / node[PLAN_ROWS].(float64)
 			node[PLANNER_ESTIMATE_DIRECTION] = EstimateDirectionUnder
 		}
 	} else {

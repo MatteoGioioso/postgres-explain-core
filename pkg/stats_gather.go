@@ -172,7 +172,7 @@ func (s *StatsGather) computeIndexesStats(node Node) {
 		indexNode := IndexNode{
 			Id:            node[NODE_ID].(string),
 			Type:          node[NODE_TYPE].(string),
-			ExclusiveTime: node[EXCLUSIVE_DURATION].(float64),
+			ExclusiveTime: ConvertToFloat64(node[EXCLUSIVE_DURATION]),
 		}
 
 		if node[INDEX_CONDITION] != nil {
@@ -180,7 +180,7 @@ func (s *StatsGather) computeIndexesStats(node Node) {
 		}
 
 		indexes.Nodes = append(indexes.Nodes, indexNode)
-		indexes.TotalTime += node[EXCLUSIVE_DURATION].(float64)
+		indexes.TotalTime += ConvertToFloat64(node[EXCLUSIVE_DURATION])
 
 		s.indexesStats[indexName] = indexes
 	}
@@ -200,11 +200,11 @@ func (s *StatsGather) computeTablesStats(node Node) {
 		tableNode := TableNode{
 			Id:            node[NODE_ID].(string),
 			Type:          node[NODE_TYPE].(string),
-			ExclusiveTime: node[EXCLUSIVE_DURATION].(float64),
+			ExclusiveTime: ConvertToFloat64(node[EXCLUSIVE_DURATION]),
 		}
 
 		tables.Nodes = append(tables.Nodes, tableNode)
-		tables.TotalTime += node[EXCLUSIVE_DURATION].(float64)
+		tables.TotalTime += ConvertToFloat64(node[EXCLUSIVE_DURATION])
 
 		s.tablesStats[tableName] = tables
 	}
@@ -224,11 +224,11 @@ func (s *StatsGather) computeNodesStats(node Node) {
 		n := NodeNode{
 			Id:            node[NODE_ID].(string),
 			Type:          node[NODE_TYPE].(string),
-			ExclusiveTime: node[EXCLUSIVE_DURATION].(float64),
+			ExclusiveTime: ConvertToFloat64(node[EXCLUSIVE_DURATION]),
 		}
 
 		nodeStats.Nodes = append(nodeStats.Nodes, n)
-		nodeStats.TotalTime += node[EXCLUSIVE_DURATION].(float64)
+		nodeStats.TotalTime += ConvertToFloat64(node[EXCLUSIVE_DURATION])
 
 		s.nodesStats[nodeType] = nodeStats
 	}

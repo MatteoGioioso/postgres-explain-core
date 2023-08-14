@@ -111,7 +111,7 @@ const (
 	SORT              = "Sort"
 	FUNCTION_SCAN     = "Function Scan"
 	INCREMENTAL_SORT  = "Incremental Sort"
-	NESTED_LOOP_JOIN  = "Nested Loop Join"
+	NESTED_LOOP_JOIN  = "Nested Loop"
 	MERGE_JOIN        = "Merge Join"
 	GROUP_AGGREGATE   = "GroupAggregate"
 
