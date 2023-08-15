@@ -311,3 +311,14 @@ type Trigger struct {
 	Calls   float64 `json:"calls"`
 	AvgTime float64 `json:"avg_time"`
 }
+
+type ExplainedError struct {
+	Error   string `json:"error"`
+	Details string `json:"error_details"`
+	Stack   string `json:"error_stack"`
+}
+
+type ExplainedResponse struct {
+	Error     string `json:"error"`
+	Explained string `json:"explained"`
+}
