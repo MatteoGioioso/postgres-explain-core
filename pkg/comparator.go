@@ -1,17 +1,16 @@
 package pkg
 
 import (
-	"strconv"
-	"strings"
+	"fmt"
 )
 
 type Comparator struct {
-	planPrev      Explained
-	planOptimized Explained
+	plan          ExplainedComparison
+	planToCompare ExplainedComparison
 }
 
-func NewComparator(planPrev Explained, planOptimized Explained) *Comparator {
-	return &Comparator{planPrev: planPrev, planOptimized: planOptimized}
+func NewComparator(plan ExplainedComparison, planToCompare ExplainedComparison) *Comparator {
+	return &Comparator{plan: plan, planToCompare: planToCompare}
 }
 
 func (c *Comparator) Compare() (Comparison, error) {
@@ -22,120 +21,95 @@ func (c *Comparator) Compare() (Comparison, error) {
 
 func (c *Comparator) compareGeneralStats() ComparisonGeneralStats {
 	return ComparisonGeneralStats{
-		ExecutionTime:    c.getPropComparison(c.planPrev.Stats.ExecutionTime, c.planOptimized.Stats.ExecutionTime, false),
-		PlanningTime:     c.getPropComparison(c.planPrev.Stats.PlanningTime, c.planOptimized.Stats.PlanningTime, false),
-		MaxDuration:      c.getPropComparison(c.planPrev.Stats.MaxDuration, c.planOptimized.Stats.MaxDuration, false),
-		MaxCost:          c.getPropComparison(c.planPrev.Stats.MaxCost, c.planOptimized.Stats.MaxCost, true),
-		MaxBlocksRead:    c.getPropComparison(c.planPrev.Stats.MaxBlocksRead, c.planOptimized.Stats.MaxBlocksRead, false),
-		MaxBlocksWritten: c.getPropComparison(c.planPrev.Stats.MaxBlocksWritten, c.planOptimized.Stats.MaxBlocksWritten, false),
-		MaxBlocksHit:     c.getPropComparison(c.planPrev.Stats.MaxBlocksHit, c.planOptimized.Stats.MaxBlocksHit, true),
+		ExecutionTime:    getPropComparison(c.plan.Stats.ExecutionTime, c.planToCompare.Stats.ExecutionTime, false),
+		PlanningTime:     getPropComparison(c.plan.Stats.PlanningTime, c.planToCompare.Stats.PlanningTime, false),
+		MaxDuration:      getPropComparison(c.plan.Stats.MaxDuration, c.planToCompare.Stats.MaxDuration, false),
+		MaxCost:          getPropComparison(c.plan.Stats.MaxCost, c.planToCompare.Stats.MaxCost, false),
+		MaxBlocksRead:    getPropComparison(c.plan.Stats.MaxBlocksRead, c.planToCompare.Stats.MaxBlocksRead, true),
+		MaxBlocksWritten: getPropComparison(c.plan.Stats.MaxBlocksWritten, c.planToCompare.Stats.MaxBlocksWritten, true),
+		MaxBlocksHit:     getPropComparison(c.plan.Stats.MaxBlocksHit, c.planToCompare.Stats.MaxBlocksHit, false),
 	}
 }
 
-func (c *Comparator) getPropComparison(prev, optimized float64, isInverted bool) PropComparison {
+type NodeComparator struct {
+	node          PlanRow
+	nodeToCompare PlanRow
+}
+
+func NewNodeComparator(node, nodeToCompare PlanRow) *NodeComparator {
+	return &NodeComparator{
+		node:          node,
+		nodeToCompare: nodeToCompare,
+	}
+}
+
+func (c *NodeComparator) Compare() (NodeComparison, error) {
+	if c.node.Operation != c.nodeToCompare.Operation {
+		return NodeComparison{}, fmt.Errorf("nodes have different operation name, they are not comparable")
+	}
+
+	if c.node.Scopes.Table != c.nodeToCompare.Scopes.Table {
+		return NodeComparison{}, fmt.Errorf("nodes operation are acting on different table, they are not comparable")
+	}
+
+	return NodeComparison{
+		Operation: c.node.Operation,
+		Level:     0,
+		Scopes: NodeScopesComparison{
+			Filters: PropStringComparison{
+				Original:  c.node.Scopes.Filters,
+				ToCompare: c.nodeToCompare.Scopes.Filters,
+			},
+			Index: PropStringComparison{
+				Original:  c.node.Scopes.Index,
+				ToCompare: c.nodeToCompare.Scopes.Index,
+			},
+			Key: PropStringComparison{
+				Original:  c.node.Scopes.Key,
+				ToCompare: c.nodeToCompare.Scopes.Key,
+			},
+			Condition: PropStringComparison{
+				Original:  c.node.Scopes.Condition,
+				ToCompare: c.nodeToCompare.Scopes.Condition,
+			},
+		},
+		Inclusive: getPropComparison(c.node.Inclusive, c.nodeToCompare.Inclusive, false),
+		Loops:     getPropComparison(c.node.Loops, c.nodeToCompare.Loops, false),
+		Rows: RowsComparison{
+			Total:            getPropComparison(c.node.Rows.Total, c.nodeToCompare.Rows.Total, false),
+			PlannedRows:      getPropComparison(c.node.Rows.PlannedRows, c.nodeToCompare.Rows.PlannedRows, false),
+			Removed:          getPropComparison(c.node.Rows.Removed, c.nodeToCompare.Rows.Removed, false),
+			EstimationFactor: getPropComparison(c.node.Rows.EstimationFactor, c.nodeToCompare.Rows.EstimationFactor, false),
+		},
+		Costs: CostsComparison{
+			StartupCost: getPropComparison(c.node.Costs.StartupCost, c.nodeToCompare.Costs.StartupCost, false),
+			TotalCost:   getPropComparison(c.node.Costs.TotalCost, c.nodeToCompare.Costs.TotalCost, false),
+			PlanWidth:   getPropComparison(c.node.Costs.PlanWidth, c.nodeToCompare.Costs.PlanWidth, false),
+		},
+		Exclusive:     getPropComparison(c.node.Exclusive, c.nodeToCompare.Exclusive, false),
+		ExecutionTime: getPropComparison(c.node.ExecutionTime, c.nodeToCompare.ExecutionTime, false),
+		Buffers: BuffersComparison{
+			EffectiveBlocksRead:    getPropComparison(c.node.Buffers.EffectiveBlocksRead, c.nodeToCompare.Buffers.EffectiveBlocksRead, false),
+			EffectiveBlocksWritten: getPropComparison(c.node.Buffers.EffectiveBlocksWritten, c.nodeToCompare.Buffers.EffectiveBlocksWritten, false),
+			EffectiveBlocksHits:    getPropComparison(c.node.Buffers.EffectiveBlocksHits, c.nodeToCompare.Buffers.EffectiveBlocksHits, false),
+		},
+	}, nil
+}
+
+func getPropComparison(current, toCompare float64, isInverted bool) PropComparison {
 	comparison := PropComparison{
-		Previous:  prev,
-		Optimized: optimized,
+		Original:  current,
+		ToCompare: toCompare,
 	}
 	if isInverted {
-		comparison.HasImproved = prev > optimized
+		comparison.HasImproved = current < toCompare
 	} else {
-		comparison.HasImproved = prev < optimized
+		comparison.HasImproved = current > toCompare
+	}
+
+	if current != 0.0 || toCompare != 0.0 {
+		comparison.PercentageImproved = ((toCompare - current) / ((current + toCompare) / 2)) * 100
 	}
 
 	return comparison
 }
-
-func (c *Comparator) compareNodes() {
-	for _, optNode := range c.planOptimized.Summary {
-		for _, prevNode := range c.planPrev.Summary {
-			if JaccardSimilarity(optNode, prevNode) > 0.5 {
-
-			} else {
-
-			}
-		}
-	}
-}
-
-func JaccardSimilarity(optimized, prev PlanRow) float64 {
-	groupOptimized := make([]token, 0)
-
-	for _, s := range strings.Split(optimized.Operation, " ") {
-		groupOptimized = append(groupOptimized, token{
-			value:  s,
-			weight: defaultWeight,
-		})
-	}
-	groupOptimized = append(groupOptimized, token{
-		value:  optimized.Scopes.Table,
-		weight: tableWeight,
-	})
-	groupOptimized = append(groupOptimized, token{
-		value:  strconv.Itoa(optimized.Level),
-		weight: levelWeight,
-	})
-
-	groupPrev := make([]token, 0)
-	for _, s := range strings.Split(prev.Operation, " ") {
-		groupPrev = append(groupPrev, token{
-			value:  s,
-			weight: defaultWeight,
-		})
-	}
-	groupPrev = append(groupPrev, token{
-		value:  prev.Scopes.Table,
-		weight: tableWeight,
-	})
-	groupPrev = append(groupPrev, token{
-		value:  strconv.Itoa(prev.Level),
-		weight: levelWeight,
-	})
-
-	intersection := make(map[token]bool)
-	union := make(map[token]bool)
-
-	for _, t := range groupOptimized {
-		union[t] = true
-	}
-
-	for _, t := range groupPrev {
-		union[t] = true
-		if found, _ := optimizedContains(groupOptimized, t.value); found {
-			intersection[t] = true
-		}
-	}
-
-	intersectionWeight := 0.0
-	unionWeight := 0.0
-	for t := range union {
-		unionWeight += t.weight
-	}
-
-	for t := range intersection {
-		intersectionWeight += t.weight
-	}
-
-	jaccard := intersectionWeight / unionWeight
-	return jaccard
-}
-
-func optimizedContains(set1 []token, token string) (bool, int) {
-	for i, t := range set1 {
-		if t.value == token {
-			return true, i
-		}
-	}
-	return false, -1
-}
-
-type token struct {
-	value  string
-	weight float64
-}
-
-const (
-	defaultWeight = 1
-	levelWeight   = 2
-	tableWeight   = 5
-)

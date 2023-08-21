@@ -235,6 +235,11 @@ type Property struct {
 
 type Kind = string
 
+type ExplainedComparison struct {
+	Explained
+	Query string `json:"query"`
+}
+
 type ComparisonGeneralStats struct {
 	ExecutionTime    PropComparison `json:"execution_time"`
 	PlanningTime     PropComparison `json:"planning_time"`
@@ -247,8 +252,6 @@ type ComparisonGeneralStats struct {
 }
 
 type NodeComparison struct {
-	NodeId        string               `json:"node_id"`
-	NodeParentId  string               `json:"node_parent_id"`
 	Operation     string               `json:"operation"`
 	Level         int                  `json:"level"`
 	Scopes        NodeScopesComparison `json:"scopes"`
@@ -290,19 +293,18 @@ type CostsComparison struct {
 
 type Comparison struct {
 	GeneralStats ComparisonGeneralStats `json:"general_stats"`
-	Nodes        NodeComparison         `json:"nodes"`
 }
 
 type PropComparison struct {
-	Previous           float64 `json:"previous"`
-	Optimized          float64 `json:"optimized"`
+	Original           float64 `json:"current"`
+	ToCompare          float64 `json:"to_compare"`
 	HasImproved        bool    `json:"has_improved"`
 	PercentageImproved float64 `json:"percentage_improved"`
 }
 
 type PropStringComparison struct {
-	Previous  string `json:"previous"`
-	Optimized string `json:"optimized"`
+	Original  string `json:"original"`
+	ToCompare string `json:"to_compare"`
 }
 
 type Trigger struct {
@@ -321,4 +323,9 @@ type ExplainedError struct {
 type ExplainedResponse struct {
 	Error     string `json:"error"`
 	Explained string `json:"explained"`
+}
+
+type ComparisonResponse struct {
+	Error      string `json:"error"`
+	Comparison string `json:"comparison"`
 }

@@ -55,10 +55,6 @@ var operationsMap = map[string]Operation{
 			return props
 		},
 	},
-	HASH_JOIN: {
-		Filter:    "Join Filter",
-		Condition: HASH_CONDITION_PROP,
-	},
 	SORT: {
 		Key: SORT_KEY,
 		getSpecificProperties: func(node Node) []Property {
@@ -145,12 +141,62 @@ var operationsMap = map[string]Operation{
 	GROUP_AGGREGATE: {
 		Key: GROUP_KEY,
 	},
+	HASH_AGGREGATE: {
+		Key: GROUP_KEY,
+		getSpecificProperties: func(node Node) []Property {
+			props := make([]Property, 0)
+
+			if node[BATCHES] != nil {
+				props = append(props, Property{
+					ID:          "batches",
+					Name:        "Batches",
+					Type:        "float",
+					ValueFloat:  ConvertToFloat64(node[BATCHES]),
+					ValueString: "",
+					Skip:        false,
+					Kind:        Quantity,
+				})
+			}
+			return props
+		},
+	},
 	BITMAP_HEAP_SCAN: {
 		RelationName: RELATION_NAME,
 		Condition:    "Recheck Cond",
+		Filter:       FILTER,
+		getSpecificProperties: func(node Node) []Property {
+			props := make([]Property, 0)
+			if node[HEAP_BLOCKS] != nil {
+				props = append(props, Property{
+					ID:          "heap_blocks",
+					Name:        "Heap Blocks",
+					Type:        "string",
+					ValueFloat:  0,
+					ValueString: node[HEAP_BLOCKS].(string),
+					Skip:        false,
+					Kind:        "",
+				})
+			}
+
+			return props
+		},
+	},
+	BITMAP_INDEX_SCAN: {
+		Index:     INDEX_NAME,
+		Condition: INDEX_CONDITION,
 	},
 	NESTED_LOOP_JOIN: {
-		Filter: "Join Filter",
+		Filter: JOIN_FILTER,
+	},
+	NESTED_LOOP: {
+		Filter: JOIN_FILTER,
+	},
+	NESTED_LOOP_SEMI_JOIN: {
+		Filter: JOIN_FILTER,
+	},
+	HASH_JOIN: {
+		Filter:    JOIN_FILTER,
+		Condition: HASH_CONDITION_PROP,
 	},
 	"Default": {
 		RelationName: RELATION_NAME,
