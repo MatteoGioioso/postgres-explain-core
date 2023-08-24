@@ -1,8 +1,6 @@
 package pkg
 
-import (
-	"fmt"
-)
+import "fmt"
 
 type Comparator struct {
 	plan          ExplainedComparison
@@ -44,33 +42,31 @@ func NewNodeComparator(node, nodeToCompare PlanRow) *NodeComparator {
 }
 
 func (c *NodeComparator) Compare() (NodeComparison, error) {
-	if c.node.Operation != c.nodeToCompare.Operation {
-		return NodeComparison{}, fmt.Errorf("nodes have different operation name, they are not comparable")
-	}
-
-	if c.node.Scopes.Table != c.nodeToCompare.Scopes.Table {
-		return NodeComparison{}, fmt.Errorf("nodes operation are acting on different table, they are not comparable")
-	}
-
-	return NodeComparison{
-		Operation: c.node.Operation,
-		Level:     0,
+	comparison := NodeComparison{
+		NodeId:          c.node.NodeId,
+		NodeIdToCompare: c.nodeToCompare.NodeId,
+		Operation:       c.node.Operation,
+		Level:           0,
 		Scopes: NodeScopesComparison{
 			Filters: PropStringComparison{
 				Original:  c.node.Scopes.Filters,
 				ToCompare: c.nodeToCompare.Scopes.Filters,
+				AreSame:   c.node.Scopes.Filters == c.nodeToCompare.Scopes.Filters,
 			},
 			Index: PropStringComparison{
 				Original:  c.node.Scopes.Index,
 				ToCompare: c.nodeToCompare.Scopes.Index,
+				AreSame:   c.node.Scopes.Index == c.nodeToCompare.Scopes.Index,
 			},
 			Key: PropStringComparison{
 				Original:  c.node.Scopes.Key,
 				ToCompare: c.nodeToCompare.Scopes.Key,
+				AreSame:   c.node.Scopes.Key == c.nodeToCompare.Scopes.Key,
 			},
 			Condition: PropStringComparison{
 				Original:  c.node.Scopes.Condition,
 				ToCompare: c.nodeToCompare.Scopes.Condition,
+				AreSame:   c.node.Scopes.Condition == c.nodeToCompare.Scopes.Condition,
 			},
 		},
 		Inclusive: getPropComparison(c.node.Inclusive, c.nodeToCompare.Inclusive, false),
@@ -88,12 +84,38 @@ func (c *NodeComparator) Compare() (NodeComparison, error) {
 		},
 		Exclusive:     getPropComparison(c.node.Exclusive, c.nodeToCompare.Exclusive, false),
 		ExecutionTime: getPropComparison(c.node.ExecutionTime, c.nodeToCompare.ExecutionTime, false),
-		Buffers: BuffersComparison{
+	}
+
+	if c.node.DoesContainBuffers {
+		comparison.Buffers = BuffersComparison{
 			EffectiveBlocksRead:    getPropComparison(c.node.Buffers.EffectiveBlocksRead, c.nodeToCompare.Buffers.EffectiveBlocksRead, false),
 			EffectiveBlocksWritten: getPropComparison(c.node.Buffers.EffectiveBlocksWritten, c.nodeToCompare.Buffers.EffectiveBlocksWritten, false),
 			EffectiveBlocksHits:    getPropComparison(c.node.Buffers.EffectiveBlocksHits, c.nodeToCompare.Buffers.EffectiveBlocksHits, false),
-		},
-	}, nil
+		}
+	}
+
+	if c.node.Operation != c.nodeToCompare.Operation {
+		comparison.Warnings = append(
+			comparison.Warnings,
+			fmt.Sprintf("Nodes contains different operation type: %v, %v", c.node.Operation, c.nodeToCompare.Operation),
+		)
+	}
+
+	if c.node.Scopes.Table != c.nodeToCompare.Scopes.Table {
+		comparison.Warnings = append(
+			comparison.Warnings,
+			fmt.Sprintf("Nodes are acting on different tables: %v, %v", c.node.Scopes.Table, c.nodeToCompare.Scopes.Table),
+		)
+	}
+
+	if c.node.Level != c.nodeToCompare.Level {
+		comparison.Warnings = append(
+			comparison.Warnings,
+			fmt.Sprintf("Nodes are on different level: %v, %v", c.node.Level, c.nodeToCompare.Level),
+		)
+	}
+
+	return comparison, nil
 }
 
 func getPropComparison(current, toCompare float64, isInverted bool) PropComparison {

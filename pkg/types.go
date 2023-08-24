@@ -252,20 +252,23 @@ type ComparisonGeneralStats struct {
 }
 
 type NodeComparison struct {
-	Operation     string               `json:"operation"`
-	Level         int                  `json:"level"`
-	Scopes        NodeScopesComparison `json:"scopes"`
-	Inclusive     PropComparison       `json:"inclusive"`
-	Loops         PropComparison       `json:"loops"`
-	Rows          RowsComparison       `json:"rows"`
-	Costs         CostsComparison      `json:"costs"`
-	Exclusive     PropComparison       `json:"exclusive"`
-	ExecutionTime PropComparison       `json:"execution_time"`
-	Buffers       BuffersComparison    `json:"buffers"`
+	NodeId          string               `json:"node_id"`
+	NodeIdToCompare string               `json:"node_id_to_compare"`
+	Operation       string               `json:"operation"`
+	Level           int                  `json:"level"`
+	Warnings        []string             `json:"warnings"`
+	Infos           []string             `json:"infos"`
+	Scopes          NodeScopesComparison `json:"scopes"`
+	Inclusive       PropComparison       `json:"inclusive_time"`
+	Loops           PropComparison       `json:"loops"`
+	Rows            RowsComparison       `json:"rows"`
+	Costs           CostsComparison      `json:"costs"`
+	Exclusive       PropComparison       `json:"exclusive_time"`
+	ExecutionTime   PropComparison       `json:"execution_time"`
+	Buffers         BuffersComparison    `json:"buffers"`
 }
 
 type NodeScopesComparison struct {
-	Table     PropStringComparison `json:"table"`
 	Filters   PropStringComparison `json:"filters"`
 	Index     PropStringComparison `json:"index"`
 	Key       PropStringComparison `json:"key"`
@@ -273,10 +276,10 @@ type NodeScopesComparison struct {
 }
 
 type RowsComparison struct {
-	Total            PropComparison `json:"total"`
+	Total            PropComparison `json:"total_rows"`
 	PlannedRows      PropComparison `json:"planned_rows"`
-	Removed          PropComparison `json:"removed"`
-	EstimationFactor PropComparison `json:"estimation_factor"`
+	Removed          PropComparison `json:"removed_rows"`
+	EstimationFactor PropComparison `json:"rows_estimation_factor"`
 }
 
 type BuffersComparison struct {
@@ -305,6 +308,7 @@ type PropComparison struct {
 type PropStringComparison struct {
 	Original  string `json:"original"`
 	ToCompare string `json:"to_compare"`
+	AreSame   bool   `json:"are_same"`
 }
 
 type Trigger struct {
