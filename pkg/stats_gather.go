@@ -145,20 +145,29 @@ func (s *StatsGather) ComputeJITStats() *JIT {
 	return s.jit
 }
 
-func (s *StatsGather) ComputeTriggersStats() []Trigger {
+func (s *StatsGather) ComputeTriggersStats() *Triggers {
 	if s.triggers != nil {
+		maxTime := 0.0
 		triggers := make([]Trigger, 0)
 		for _, trigger := range s.triggers {
 			calls := ConvertStringToFloat64(trigger.Calls)
-			triggers = append(triggers, Trigger{
+			tr := Trigger{
 				Name:    trigger.Name,
 				Time:    trigger.Time,
 				Calls:   calls,
 				AvgTime: trigger.Time / calls,
-			})
+			}
+			triggers = append(triggers, tr)
+
+			if trigger.Time > maxTime {
+				maxTime = trigger.Time
+			}
 		}
 
-		return triggers
+		return &Triggers{
+			MaxTime: maxTime,
+			Items:   triggers,
+		}
 	}
 
 	return nil

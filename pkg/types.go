@@ -69,7 +69,7 @@ type Explained struct {
 	TablesStats   TablesStats  `json:"tables_stats"`
 	NodesStats    NodesStats   `json:"nodes_stats"`
 	JITStats      *JIT         `json:"jit_stats"`
-	TriggersStats []Trigger    `json:"triggers_stats"`
+	TriggersStats *Triggers    `json:"triggers_stats"`
 }
 
 type NodeScopes struct {
@@ -316,6 +316,11 @@ type Trigger struct {
 	Time    float64 `json:"time"`
 	Calls   float64 `json:"calls"`
 	AvgTime float64 `json:"avg_time"`
+}
+
+type Triggers struct {
+	MaxTime float64   `json:"max_time"`
+	Items   []Trigger `json:"items"`
 }
 
 type ExplainedError struct {
