@@ -62,6 +62,10 @@ func IsCTE(node Node) bool {
 	return node[PARENT_RELATIONSHIP] == "InitPlan" && strings.HasPrefix(node[SUBPLAN_NAME].(string), "CTE")
 }
 
+func isSubPlan(node Node) bool {
+	return node[PARENT_RELATIONSHIP] == "SubPlan" && strings.HasPrefix(node[SUBPLAN_NAME].(string), "SubPlan")
+}
+
 func ConvertStringToFloat64(val string) float64 {
 	float, err := strconv.ParseFloat(val, 64)
 	if err != nil {
@@ -138,10 +142,14 @@ func getEffectiveBlocksHits(node Node) float64 {
 
 func getRowsRemovedByFilter(node Node) float64 {
 	op := node[NODE_TYPE].(string)
+	removedByFilter := 0.0
 	filter, ok := filtersMap[op]
-	if !ok {
-		return node[ROWS_REMOVED_BY_FILTER+REVISED].(float64)
+	if ok {
+		removedByFilter = node[filter+REVISED].(float64)
+	}
+	if removedByFilter == 0.0 {
+		removedByFilter = node[ROWS_REMOVED_BY_FILTER+REVISED].(float64)
 	}
 
-	return node[filter+REVISED].(float64)
+	return removedByFilter
 }

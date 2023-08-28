@@ -135,9 +135,9 @@ type Worker struct {
 }
 
 type Workers struct {
-	Launched float64  `json:"launched"`
-	Planned  float64  `json:"planned"`
-	List     []Worker `json:"list"`
+	Launched float64      `json:"launched"`
+	Planned  float64      `json:"planned"`
+	List     [][]Property `json:"list"`
 }
 
 type Timings struct {
@@ -162,6 +162,7 @@ type PlanRow struct {
 	ExecutionTime              float64    `json:"execution_time"`
 	Buffers                    Buffers    `json:"buffers"`
 	SubPlanOf                  string     `json:"sub_plan_of"`
+	CteSubPlanOf               string     `json:"cte_sub_plan_of"`
 	ParentPlanId               string     `json:"parent_plan_id"`
 	DoesContainBuffers         bool       `json:"does_contain_buffers"`
 	Workers                    Workers    `json:"workers"`
@@ -176,6 +177,7 @@ type Operation struct {
 	Condition    string `json:"condition"`
 
 	getSpecificProperties func(node Node) []Property
+	getWorkers            func(node Node) [][]Property
 }
 
 type Scope struct {

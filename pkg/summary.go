@@ -69,15 +69,14 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 		if operation.getSpecificProperties != nil {
 			row.NodeTypeSpecificProperties = operation.getSpecificProperties(node)
 		}
+		if operation.getWorkers != nil {
+			row.Workers.List = operation.getWorkers(node)
+		}
 	}
 
 	if node[WORKERS_PLANNED_BY_GATHER] != nil {
 		row.Workers.Planned = node[WORKERS_PLANNED_BY_GATHER].(float64)
 		row.Workers.Launched = ConvertToFloat64(node[WORKERS_LAUNCHED])
-	}
-
-	if node[WORKERS] != nil {
-		row.Workers.List = s.getWorkersList(node)
 	}
 
 	if node[DOES_CONTAIN_BUFFERS].(bool) {
@@ -119,8 +118,11 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 	}
 
 	if node[CTE_SUBPLAN_OF] != nil {
-		row.SubPlanOf = node[CTE_SUBPLAN_OF].(string)
+		row.CteSubPlanOf = node[CTE_SUBPLAN_OF].(string)
 		row.ParentPlanId = s.ctes[node[CTE_SUBPLAN_OF].(string)].id
+	}
+	if isSubPlan(node) {
+		row.SubPlanOf = node[SUBPLAN_NAME].(string)
 	}
 
 	row.NodeFingerprint = s.computeNodeFingerprint(row)
@@ -145,24 +147,6 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 			}
 		}
 	}
-}
-
-func (s *Summary) getWorkersList(node Node) []Worker {
-	workersList := make([]Worker, 0)
-	for _, worker := range node[WORKERS].([]interface{}) {
-		w := worker.(map[string]interface{})
-
-		if w[ACTUAL_ROWS] != nil {
-			workersList = append(workersList, Worker{
-				Number: w["Worker Number"].(float64),
-				Loops:  w[ACTUAL_LOOPS].(float64),
-				Rows:   w[ACTUAL_ROWS].(float64),
-				Time:   w[ACTUAL_TOTAL_TIME].(float64),
-			})
-		}
-	}
-
-	return workersList
 }
 
 func (s *Summary) getFullOperationName(node Node) string {

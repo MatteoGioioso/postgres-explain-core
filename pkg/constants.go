@@ -8,19 +8,21 @@ var operationsMap = map[string]Operation{
 	SEQUENTIAL_SCAN: {
 		RelationName: RELATION_NAME,
 		Filter:       FILTER,
+		getWorkers:   getScanWorkers,
 	},
 	INDEX_SCAN: {
 		RelationName: RELATION_NAME,
 		Index:        INDEX_NAME,
 		Filter:       FILTER,
 		Condition:    INDEX_CONDITION,
+		getWorkers:   getScanWorkers,
 		getSpecificProperties: func(node Node) []Property {
 			props := make([]Property, 0)
 
 			if node[HEAP_FETCHES] != nil {
 				props = append(props, Property{
 					ID:          "heap_fetches",
-					Name:        "Heat fetches",
+					Name:        "Heap fetches",
 					Type:        "float",
 					ValueFloat:  ConvertToFloat64(node[HEAP_FETCHES]),
 					ValueString: "",
@@ -37,13 +39,14 @@ var operationsMap = map[string]Operation{
 		Index:        INDEX_NAME,
 		Filter:       FILTER,
 		Condition:    INDEX_CONDITION,
+		getWorkers:   getScanWorkers,
 		getSpecificProperties: func(node Node) []Property {
 			props := make([]Property, 0)
 
 			if node[HEAP_FETCHES] != nil {
 				props = append(props, Property{
 					ID:          "heap_fetches",
-					Name:        "Heat fetches",
+					Name:        "Heap fetches",
 					Type:        "float",
 					ValueFloat:  ConvertToFloat64(node[HEAP_FETCHES]),
 					ValueString: "",
@@ -56,7 +59,8 @@ var operationsMap = map[string]Operation{
 		},
 	},
 	SORT: {
-		Key: SORT_KEY,
+		Key:        SORT_KEY,
+		getWorkers: getSortWorkers,
 		getSpecificProperties: func(node Node) []Property {
 			props := make([]Property, 0)
 
@@ -91,7 +95,8 @@ var operationsMap = map[string]Operation{
 		},
 	},
 	INCREMENTAL_SORT: {
-		Key: SORT_KEY,
+		Key:        SORT_KEY,
+		getWorkers: getSortWorkers,
 		getSpecificProperties: func(node Node) []Property {
 			props := make([]Property, 0)
 
@@ -139,6 +144,12 @@ var operationsMap = map[string]Operation{
 		RelationName: FUNCTION_NAME,
 	},
 	GROUP_AGGREGATE: {
+		Key: GROUP_KEY,
+	},
+	"Finalize " + GROUP_AGGREGATE: {
+		Key: GROUP_KEY,
+	},
+	"Partial " + GROUP_AGGREGATE: {
 		Key: GROUP_KEY,
 	},
 	HASH_AGGREGATE: {
@@ -198,11 +209,122 @@ var operationsMap = map[string]Operation{
 		Filter:    JOIN_FILTER,
 		Condition: HASH_CONDITION_PROP,
 	},
+	MERGE_JOIN: {
+		Filter:    JOIN_FILTER,
+		Condition: "Merge Cond",
+	},
 	"Default": {
 		RelationName: RELATION_NAME,
 		Index:        INDEX_NAME,
 		Filter:       FILTER,
+		Key:          GROUP_KEY,
 	},
+}
+
+var getScanWorkers = func(node Node) [][]Property {
+	props := make([][]Property, 0)
+	if node[WORKERS] == nil {
+		return props
+	}
+
+	for _, worker := range node[WORKERS].([]interface{}) {
+		w := worker.(map[string]interface{})
+		work := make([]Property, 0)
+
+		work = append(work, Property{
+			ID:          "worker_number",
+			Name:        "Worker Number",
+			Type:        "float",
+			ValueFloat:  w["Worker Number"].(float64),
+			ValueString: "",
+			Skip:        false,
+			Kind:        "",
+		})
+		work = append(work, Property{
+			ID:          "actual_loops",
+			Name:        ACTUAL_LOOPS,
+			Type:        "float",
+			ValueFloat:  ConvertToFloat64(w[ACTUAL_LOOPS]),
+			ValueString: "",
+			Skip:        false,
+			Kind:        "",
+		})
+		work = append(work, Property{
+			ID:          "actual_rows",
+			Name:        ACTUAL_ROWS,
+			Type:        "float",
+			ValueFloat:  ConvertToFloat64(w[ACTUAL_ROWS]),
+			ValueString: "",
+			Skip:        false,
+			Kind:        "",
+		})
+		work = append(work, Property{
+			ID:          "actual_total_time",
+			Name:        ACTUAL_TOTAL_TIME,
+			Type:        "float",
+			ValueFloat:  ConvertToFloat64(w[ACTUAL_TOTAL_TIME]),
+			ValueString: "",
+			Skip:        false,
+			Kind:        Timing,
+		})
+
+		props = append(props, work)
+	}
+
+	return props
+}
+
+var getSortWorkers = func(node Node) [][]Property {
+	props := make([][]Property, 0)
+	if node[WORKERS] == nil {
+		return props
+	}
+
+	for _, worker := range node[WORKERS].([]interface{}) {
+		w := worker.(map[string]interface{})
+		work := make([]Property, 0)
+
+		work = append(work, Property{
+			ID:          "worker_number",
+			Name:        "Worker Number",
+			Type:        "float",
+			ValueFloat:  w["Worker Number"].(float64),
+			ValueString: "",
+			Skip:        false,
+			Kind:        "",
+		})
+		work = append(work, Property{
+			ID:          "sort_method",
+			Name:        SORT_METHOD,
+			Type:        "string",
+			ValueFloat:  0,
+			ValueString: w[SORT_METHOD].(string),
+			Skip:        false,
+			Kind:        "",
+		})
+		work = append(work, Property{
+			ID:          "sort_space_used",
+			Name:        SORT_SPACE_USED,
+			Type:        "float",
+			ValueFloat:  ConvertToFloat64(w[SORT_SPACE_USED]),
+			ValueString: "",
+			Skip:        false,
+			Kind:        DiskSize,
+		})
+		work = append(work, Property{
+			ID:          "sort_space_type",
+			Name:        SORT_SPACE_TYPE,
+			Type:        "string",
+			ValueFloat:  0,
+			ValueString: w[SORT_SPACE_TYPE].(string),
+			Skip:        false,
+			Kind:        "",
+		})
+
+		props = append(props, work)
+	}
+
+	return props
 }
 
 var filtersMap = map[string]string{
