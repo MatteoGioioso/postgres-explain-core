@@ -148,6 +148,7 @@ type Timings struct {
 
 type PlanRow struct {
 	NodeId                     string     `json:"node_id"`
+	NodeShortId                float64    `json:"node_short_id"`
 	NodeFingerprint            string     `json:"node_fingerprint"`
 	NodeParentId               string     `json:"node_parent_id"`
 	Operation                  string     `json:"operation"`

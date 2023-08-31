@@ -34,6 +34,7 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 
 	row := PlanRow{
 		NodeId:       id,
+		NodeShortId:  0,
 		NodeParentId: parentId,
 		Level:        level,
 		Operation:    s.getFullOperationName(node),
@@ -65,15 +66,17 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 		NodeTypeSpecificProperties: make([]Property, 0),
 	}
 
-	if operation, ok := operationsMap[node[NODE_TYPE].(string)]; ok {
-		if operation.getSpecificProperties != nil {
-			row.NodeTypeSpecificProperties = operation.getSpecificProperties(node)
-		}
-		if operation.getWorkers != nil {
-			row.Workers.List = operation.getWorkers(node)
-		}
+	operation, ok := operationsMap[node[NODE_TYPE].(string)]
+	if !ok {
+		operation = operationsMap["Default"]
 	}
-
+	if operation.getSpecificProperties != nil {
+		row.NodeTypeSpecificProperties = operation.getSpecificProperties(node)
+	}
+	if operation.getWorkers != nil {
+		row.Workers.List = operation.getWorkers(node)
+	}
+	
 	if node[WORKERS_PLANNED_BY_GATHER] != nil {
 		row.Workers.Planned = node[WORKERS_PLANNED_BY_GATHER].(float64)
 		row.Workers.Launched = ConvertToFloat64(node[WORKERS_LAUNCHED])
@@ -194,6 +197,10 @@ func (s *Summary) computeNodeFingerprint(row PlanRow) string {
 }
 
 func convertPropToString(prop interface{}) string {
+	if prop == nil {
+		return ""
+	}
+
 	switch r := prop.(type) {
 	case string:
 		return r

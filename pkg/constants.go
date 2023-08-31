@@ -1,21 +1,17 @@
 package pkg
 
-import (
-	"fmt"
-)
-
 var operationsMap = map[string]Operation{
 	SEQUENTIAL_SCAN: {
 		RelationName: RELATION_NAME,
 		Filter:       FILTER,
-		getWorkers:   getScanWorkers,
+		getWorkers:   getGenericWorkers,
 	},
 	INDEX_SCAN: {
 		RelationName: RELATION_NAME,
 		Index:        INDEX_NAME,
 		Filter:       FILTER,
 		Condition:    INDEX_CONDITION,
-		getWorkers:   getScanWorkers,
+		getWorkers:   getGenericWorkers,
 		getSpecificProperties: func(node Node) []Property {
 			props := make([]Property, 0)
 
@@ -39,7 +35,7 @@ var operationsMap = map[string]Operation{
 		Index:        INDEX_NAME,
 		Filter:       FILTER,
 		Condition:    INDEX_CONDITION,
-		getWorkers:   getScanWorkers,
+		getWorkers:   getGenericWorkers,
 		getSpecificProperties: func(node Node) []Property {
 			props := make([]Property, 0)
 
@@ -63,34 +59,7 @@ var operationsMap = map[string]Operation{
 		getWorkers: getSortWorkers,
 		getSpecificProperties: func(node Node) []Property {
 			props := make([]Property, 0)
-
-			if node[SORT_METHOD] != nil {
-				props = append(props, Property{
-					ID:          "sort_method",
-					Name:        "Sort method",
-					Type:        "string",
-					ValueFloat:  0,
-					ValueString: node[SORT_METHOD].(string),
-					Skip:        false,
-					Kind:        "",
-				})
-			}
-
-			if node[SORT_SPACE_TYPE] != nil {
-				property := Property{
-					ID:          "sort_space_type",
-					Name:        node[SORT_SPACE_TYPE].(string),
-					Type:        "float",
-					ValueString: "",
-					Skip:        false,
-					Kind:        DiskSize,
-				}
-
-				property.ValueFloat = ConvertToFloat64(node[SORT_SPACE_USED])
-
-				props = append(props, property)
-			}
-
+			props = getSortProperties(node, props)
 			return props
 		},
 	},
@@ -99,38 +68,75 @@ var operationsMap = map[string]Operation{
 		getWorkers: getSortWorkers,
 		getSpecificProperties: func(node Node) []Property {
 			props := make([]Property, 0)
+			props = getSortProperties(node, props)
 
 			if node[PRESORTED_KEY] != nil {
 				props = append(props, Property{
 					ID:          "pre_sorted_key",
 					Name:        PRESORTED_KEY,
 					Type:        "string",
-					ValueFloat:  0,
 					ValueString: convertPropToString(node[PRESORTED_KEY]),
-					Skip:        false,
-					Kind:        "",
 				})
 			}
 
-			// TODO add fullsort groups and finish with all the properties
 			if node[PRE_SORTED_GROUPS] != nil {
 				sortedGroups := node[PRE_SORTED_GROUPS].(map[string]interface{})
 
-				value := fmt.Sprintf(
-					"%v, Sort method: %v",
-					sortedGroups["Group Count"],
-					sortedGroups["Sort Methods Used"].([]interface{})[0],
-				)
+				props = append(props, Property{
+					ID:         "pre_sort_group_count",
+					Name:       "Pre Sort Group Count",
+					Type:       "float",
+					ValueFloat: ConvertToFloat64(sortedGroups["Group Count"]),
+					Kind:       Quantity,
+				})
+
+				if sortedGroups["Sort Space Memory"] != nil {
+					sortSpaceMemory := sortedGroups["Sort Space Memory"].(map[string]interface{})
+					props = append(props, Property{
+						ID:         "average_pre_sort_space_used",
+						Name:       "Pre Sort Average Space Used",
+						Type:       "float",
+						ValueFloat: ConvertToFloat64(sortSpaceMemory["Average Sort Space Used"]),
+						Kind:       DiskSize,
+					})
+					props = append(props, Property{
+						ID:         "peak_pre_sort_space_used",
+						Name:       "Pre Sort Peak Space Used",
+						Type:       "float",
+						ValueFloat: ConvertToFloat64(sortSpaceMemory["Peak Sort Space Used"]),
+						Kind:       DiskSize,
+					})
+				}
+			}
+
+			if node[FULL_SORT_GROUPS] != nil {
+				sortedGroups := node[FULL_SORT_GROUPS].(map[string]interface{})
 
 				props = append(props, Property{
-					ID:          "pre_sorted_group",
-					Name:        PRE_SORTED_GROUPS,
-					Type:        "string",
-					ValueFloat:  0,
-					ValueString: value,
-					Skip:        false,
-					Kind:        "",
+					ID:         "full_group_count",
+					Name:       "Full Sort Group Count",
+					Type:       "float",
+					ValueFloat: ConvertToFloat64(sortedGroups["Group Count"]),
+					Kind:       Quantity,
 				})
+
+				if sortedGroups["Sort Space Memory"] != nil {
+					sortSpaceMemory := sortedGroups["Sort Space Memory"].(map[string]interface{})
+					props = append(props, Property{
+						ID:         "average_full_sort_space_used",
+						Name:       "Full Average Sort Space Used",
+						Type:       "float",
+						ValueFloat: ConvertToFloat64(sortSpaceMemory["Average Sort Space Used"]),
+						Kind:       DiskSize,
+					})
+					props = append(props, Property{
+						ID:         "peak_full_sort_space_used",
+						Name:       "Full Sort Peak Space Used",
+						Type:       "float",
+						ValueFloat: ConvertToFloat64(sortSpaceMemory["Peak Sort Space Used"]),
+						Kind:       DiskSize,
+					})
+				}
 			}
 
 			return props
@@ -153,23 +159,21 @@ var operationsMap = map[string]Operation{
 		Key: GROUP_KEY,
 	},
 	HASH_AGGREGATE: {
-		Key: GROUP_KEY,
+		Key:        GROUP_KEY,
+		getWorkers: getHashWorkers,
+	},
+	"Partial " + HASH_AGGREGATE: {
+		Key:        GROUP_KEY,
+		getWorkers: getHashWorkers,
+	},
+	HASH: {
 		getSpecificProperties: func(node Node) []Property {
 			props := make([]Property, 0)
+			props = append(props, hashBucketsAndBatches(node, props)...)
 
-			if node[BATCHES] != nil {
-				props = append(props, Property{
-					ID:          "batches",
-					Name:        "Batches",
-					Type:        "float",
-					ValueFloat:  ConvertToFloat64(node[BATCHES]),
-					ValueString: "",
-					Skip:        false,
-					Kind:        Quantity,
-				})
-			}
 			return props
 		},
+		getWorkers: getGenericWorkers,
 	},
 	BITMAP_HEAP_SCAN: {
 		RelationName: RELATION_NAME,
@@ -197,17 +201,20 @@ var operationsMap = map[string]Operation{
 		Condition: INDEX_CONDITION,
 	},
 	NESTED_LOOP_JOIN: {
-		Filter: JOIN_FILTER,
+		Filter:     JOIN_FILTER,
+		getWorkers: getGenericWorkers,
 	},
 	NESTED_LOOP: {
-		Filter: JOIN_FILTER,
+		Filter:     JOIN_FILTER,
+		getWorkers: getGenericWorkers,
 	},
 	NESTED_LOOP_SEMI_JOIN: {
 		Filter: JOIN_FILTER,
 	},
 	HASH_JOIN: {
-		Filter:    JOIN_FILTER,
-		Condition: HASH_CONDITION_PROP,
+		Filter:     JOIN_FILTER,
+		Condition:  HASH_CONDITION_PROP,
+		getWorkers: getGenericWorkers,
 	},
 	MERGE_JOIN: {
 		Filter:    JOIN_FILTER,
@@ -218,10 +225,11 @@ var operationsMap = map[string]Operation{
 		Index:        INDEX_NAME,
 		Filter:       FILTER,
 		Key:          GROUP_KEY,
+		getWorkers:   getGenericWorkers,
 	},
 }
 
-var getScanWorkers = func(node Node) [][]Property {
+var getGenericWorkers = func(node Node) [][]Property {
 	props := make([][]Property, 0)
 	if node[WORKERS] == nil {
 		return props
@@ -232,43 +240,12 @@ var getScanWorkers = func(node Node) [][]Property {
 		work := make([]Property, 0)
 
 		work = append(work, Property{
-			ID:          "worker_number",
-			Name:        "Worker Number",
-			Type:        "float",
-			ValueFloat:  w["Worker Number"].(float64),
-			ValueString: "",
-			Skip:        false,
-			Kind:        "",
+			ID:         "worker_number",
+			Name:       "Worker Number",
+			Type:       "float",
+			ValueFloat: w["Worker Number"].(float64),
 		})
-		work = append(work, Property{
-			ID:          "actual_loops",
-			Name:        ACTUAL_LOOPS,
-			Type:        "float",
-			ValueFloat:  ConvertToFloat64(w[ACTUAL_LOOPS]),
-			ValueString: "",
-			Skip:        false,
-			Kind:        "",
-		})
-		work = append(work, Property{
-			ID:          "actual_rows",
-			Name:        ACTUAL_ROWS,
-			Type:        "float",
-			ValueFloat:  ConvertToFloat64(w[ACTUAL_ROWS]),
-			ValueString: "",
-			Skip:        false,
-			Kind:        "",
-		})
-		work = append(work, Property{
-			ID:          "actual_total_time",
-			Name:        ACTUAL_TOTAL_TIME,
-			Type:        "float",
-			ValueFloat:  ConvertToFloat64(w[ACTUAL_TOTAL_TIME]),
-			ValueString: "",
-			Skip:        false,
-			Kind:        Timing,
-		})
-
-		props = append(props, work)
+		props = append(props, getGenericWorkerProperties(w, work))
 	}
 
 	return props
@@ -283,45 +260,172 @@ var getSortWorkers = func(node Node) [][]Property {
 	for _, worker := range node[WORKERS].([]interface{}) {
 		w := worker.(map[string]interface{})
 		work := make([]Property, 0)
+		work = append(work, Property{
+			ID:         "worker_number",
+			Name:       "Worker Number",
+			Type:       "float",
+			ValueFloat: w["Worker Number"].(float64),
+		})
+		props = append(props, getSortProperties(w, getGenericWorkerProperties(w, work)))
+	}
 
+	return props
+}
+
+var getHashWorkers = func(node Node) [][]Property {
+	workers := make([][]Property, 0)
+
+	if node[WORKERS] == nil {
+		return workers
+	}
+
+	for _, worker := range node[WORKERS].([]interface{}) {
+		w := worker.(map[string]interface{})
+		work := make([]Property, 0)
 		work = append(work, Property{
-			ID:          "worker_number",
-			Name:        "Worker Number",
-			Type:        "float",
-			ValueFloat:  w["Worker Number"].(float64),
-			ValueString: "",
-			Skip:        false,
-			Kind:        "",
+			ID:         "worker_number",
+			Name:       "Worker Number",
+			Type:       "float",
+			ValueFloat: w["Worker Number"].(float64),
 		})
-		work = append(work, Property{
-			ID:          "sort_method",
-			Name:        SORT_METHOD,
-			Type:        "string",
-			ValueFloat:  0,
-			ValueString: w[SORT_METHOD].(string),
-			Skip:        false,
-			Kind:        "",
-		})
-		work = append(work, Property{
-			ID:          "sort_space_used",
-			Name:        SORT_SPACE_USED,
+
+		workers = append(workers, hashBucketsAndBatches(w, getGenericWorkerProperties(w, work)))
+	}
+
+	return workers
+}
+
+func getGenericWorkerProperties(w Node, work []Property) []Property {
+	work = append(work, Property{
+		ID:         "actual_loops",
+		Name:       ACTUAL_LOOPS,
+		Type:       "float",
+		ValueFloat: ConvertToFloat64(w[ACTUAL_LOOPS]),
+		Kind:       Quantity,
+	})
+	work = append(work, Property{
+		ID:         "actual_rows",
+		Name:       ACTUAL_ROWS,
+		Type:       "float",
+		ValueFloat: ConvertToFloat64(w[ACTUAL_ROWS]),
+		Kind:       Quantity,
+	})
+	work = append(work, Property{
+		ID:         "actual_total_time",
+		Name:       ACTUAL_TOTAL_TIME,
+		Type:       "float",
+		ValueFloat: ConvertToFloat64(w[ACTUAL_TOTAL_TIME]),
+		Kind:       Timing,
+	})
+
+	return work
+}
+
+func hashBucketsAndBatches(node Node, props []Property) []Property {
+	if node["Memory Usage"] != nil {
+		props = append(props, Property{
+			ID:          "memory_usage",
+			Name:        "Memory Usage",
 			Type:        "float",
-			ValueFloat:  ConvertToFloat64(w[SORT_SPACE_USED]),
+			ValueFloat:  ConvertToFloat64(node["Memory Usage"]),
 			ValueString: "",
 			Skip:        false,
 			Kind:        DiskSize,
 		})
-		work = append(work, Property{
+	}
+
+	if node["Disk Usage"] != nil {
+		props = append(props, Property{
+			ID:          "disk_usage",
+			Name:        "Disk Usage",
+			Type:        "float",
+			ValueFloat:  ConvertToFloat64(node["Disk Usage"]),
+			ValueString: "",
+			Skip:        false,
+			Kind:        DiskSize,
+		})
+	}
+
+	if node[BATCHES] != nil {
+		props = append(props, Property{
+			ID:          "batches",
+			Name:        BATCHES,
+			Type:        "float",
+			ValueFloat:  ConvertToFloat64(node[BATCHES]),
+			ValueString: "",
+			Skip:        false,
+			Kind:        Quantity,
+		})
+	}
+
+	if node[BATCHES+" Originally"] != nil {
+		props = append(props, Property{
+			ID:          "batches_originally",
+			Name:        BATCHES + " Originally",
+			Type:        "float",
+			ValueFloat:  ConvertToFloat64(node[BATCHES+" Originally"]),
+			ValueString: "",
+			Skip:        false,
+			Kind:        Quantity,
+		})
+	}
+
+	if node["Buckets"] != nil {
+		props = append(props, Property{
+			ID:          "buckets",
+			Name:        "Buckets",
+			Type:        "float",
+			ValueFloat:  ConvertToFloat64(node["Buckets"]),
+			ValueString: "",
+			Skip:        false,
+			Kind:        Quantity,
+		})
+	}
+
+	if node["Buckets"+" Originally"] != nil {
+		props = append(props, Property{
+			ID:          "buckets_originally",
+			Name:        "Buckets" + " Originally",
+			Type:        "float",
+			ValueFloat:  ConvertToFloat64(node["Buckets Originally"]),
+			ValueString: "",
+			Skip:        false,
+			Kind:        Quantity,
+		})
+	}
+
+	return props
+}
+
+func getSortProperties(node Node, props []Property) []Property {
+	if node[SORT_METHOD] != nil {
+		props = append(props, Property{
+			ID:          "sort_method",
+			Name:        "Sort method",
+			Type:        "string",
+			ValueString: node[SORT_METHOD].(string),
+		})
+	}
+
+	if node[SORT_SPACE_TYPE] != nil {
+		property := Property{
 			ID:          "sort_space_type",
 			Name:        SORT_SPACE_TYPE,
 			Type:        "string",
-			ValueFloat:  0,
-			ValueString: w[SORT_SPACE_TYPE].(string),
-			Skip:        false,
-			Kind:        "",
-		})
+			ValueString: node[SORT_SPACE_TYPE].(string),
+		}
+		props = append(props, property)
+	}
 
-		props = append(props, work)
+	if node[SORT_SPACE_USED] != nil {
+		property := Property{
+			ID:         "sort_space_used",
+			Name:       SORT_SPACE_USED,
+			Type:       "float",
+			ValueFloat: ConvertToFloat64(node[SORT_SPACE_USED]),
+			Kind:       DiskSize,
+		}
+		props = append(props, property)
 	}
 
 	return props
