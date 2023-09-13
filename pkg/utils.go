@@ -86,6 +86,25 @@ func ConvertToFloat64(val interface{}) float64 {
 	}
 }
 
+func ConvertScopeToString(prop interface{}) string {
+	if prop == nil {
+		return ""
+	}
+
+	switch r := prop.(type) {
+	case string:
+		return r
+	case []interface{}: // When Sorting we can have an array of sorting keys
+		marshal, err := json.MarshalIndent(r, "", "    ")
+		if err != nil {
+			panic(fmt.Errorf("could not marshal node operation scope into []string: %v", err))
+		}
+		return string(marshal)
+	default:
+		return ""
+	}
+}
+
 func isFloat64(val interface{}) bool {
 	typeOf := reflect.TypeOf(val).Kind()
 	return typeOf == reflect.Float64

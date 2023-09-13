@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -76,7 +75,7 @@ func (s *Summary) recurseNode(node Node, stats Stats, level int, parentId string
 	if operation.getWorkers != nil {
 		row.Workers.List = operation.getWorkers(node)
 	}
-	
+
 	if node[WORKERS_PLANNED_BY_GATHER] != nil {
 		row.Workers.Planned = node[WORKERS_PLANNED_BY_GATHER].(float64)
 		row.Workers.Launched = ConvertToFloat64(node[WORKERS_LAUNCHED])
@@ -176,11 +175,11 @@ func (s *Summary) scopes(node Node) NodeScopes {
 	}
 
 	return NodeScopes{
-		Table:     convertPropToString(node[op.RelationName]),
-		Filters:   convertPropToString(node[op.Filter]),
-		Index:     convertPropToString(node[op.Index]),
-		Key:       convertPropToString(node[op.Key]),
-		Condition: convertPropToString(node[op.Condition]),
+		Table:     ConvertScopeToString(node[op.RelationName]),
+		Filters:   ConvertScopeToString(node[op.Filter]),
+		Index:     ConvertScopeToString(node[op.Index]),
+		Key:       ConvertScopeToString(node[op.Key]),
+		Condition: ConvertScopeToString(node[op.Condition]),
 	}
 }
 
@@ -194,23 +193,4 @@ func (s *Summary) recurseCTEsNodes(ctesNodes map[string]Node, stats Stats) {
 
 func (s *Summary) computeNodeFingerprint(row PlanRow) string {
 	return ""
-}
-
-func convertPropToString(prop interface{}) string {
-	if prop == nil {
-		return ""
-	}
-
-	switch r := prop.(type) {
-	case string:
-		return r
-	case []interface{}: // When Sorting we can have an array of sorting keys
-		marshal, err := json.MarshalIndent(r, "", "    ")
-		if err != nil {
-			panic(fmt.Errorf("could not marshal node operation scope into []string: %v", err))
-		}
-		return string(marshal)
-	default:
-		return ""
-	}
 }

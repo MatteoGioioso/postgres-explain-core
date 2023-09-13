@@ -33,15 +33,20 @@ func (s *StatsGather) GetStatsFromPlans(plans string) error {
 		return fmt.Errorf("could not unmarshal plan: %v", err)
 	}
 
-	if p[0].Plan.ExecutionTime != 0 {
-		s.PlanningTime = p[0].Plan.PlanningTime
-		s.ExecutionTime = p[0].Plan.ExecutionTime
-	} else {
+	if p[0].ExecutionTime != 0 {
 		s.PlanningTime = p[0].PlanningTime
 		s.ExecutionTime = p[0].ExecutionTime
+	} else {
+		s.PlanningTime = p[0].Plan.PlanningTime
+		s.ExecutionTime = p[0].Plan.ExecutionTime
 	}
 
-	s.jit = p[0].JIT
+	if p[0].JIT != nil {
+		s.jit = p[0].JIT
+	} else {
+		s.jit = p[0].Plan.JIT
+	}
+
 	s.triggers = p[0].Triggers
 
 	return nil
@@ -146,7 +151,7 @@ func (s *StatsGather) ComputeJITStats() *JIT {
 }
 
 func (s *StatsGather) ComputeTriggersStats() *Triggers {
-	if s.triggers != nil {
+	if s.triggers != nil && len(s.triggers) > 0 {
 		maxTime := 0.0
 		triggers := make([]Trigger, 0)
 		for _, trigger := range s.triggers {

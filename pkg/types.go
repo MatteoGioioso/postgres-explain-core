@@ -24,6 +24,7 @@ type StatsFromPlan struct {
 	Plan struct {
 		ExecutionTime float64 `json:"Execution Time"`
 		PlanningTime  float64 `json:"Planning Time"`
+		JIT           *JIT    `json:"JIT,omitempty"`
 	} `json:"plan"`
 	ExecutionTime float64 `json:"Execution Time"`
 	PlanningTime  float64 `json:"Planning Time"`

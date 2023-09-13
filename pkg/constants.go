@@ -17,13 +17,11 @@ var operationsMap = map[string]Operation{
 
 			if node[HEAP_FETCHES] != nil {
 				props = append(props, Property{
-					ID:          "heap_fetches",
-					Name:        "Heap fetches",
-					Type:        "float",
-					ValueFloat:  ConvertToFloat64(node[HEAP_FETCHES]),
-					ValueString: "",
-					Skip:        false,
-					Kind:        Quantity,
+					ID:         "heap_fetches",
+					Name:       "Heap fetches",
+					Type:       "float",
+					ValueFloat: ConvertToFloat64(node[HEAP_FETCHES]),
+					Kind:       Quantity,
 				})
 			}
 
@@ -41,13 +39,11 @@ var operationsMap = map[string]Operation{
 
 			if node[HEAP_FETCHES] != nil {
 				props = append(props, Property{
-					ID:          "heap_fetches",
-					Name:        "Heap fetches",
-					Type:        "float",
-					ValueFloat:  ConvertToFloat64(node[HEAP_FETCHES]),
-					ValueString: "",
-					Skip:        false,
-					Kind:        Quantity,
+					ID:         "heap_fetches",
+					Name:       "Heap fetches",
+					Type:       "float",
+					ValueFloat: ConvertToFloat64(node[HEAP_FETCHES]),
+					Kind:       Quantity,
 				})
 			}
 
@@ -75,7 +71,7 @@ var operationsMap = map[string]Operation{
 					ID:          "pre_sorted_key",
 					Name:        PRESORTED_KEY,
 					Type:        "string",
-					ValueString: convertPropToString(node[PRESORTED_KEY]),
+					ValueString: ConvertScopeToString(node[PRESORTED_KEY]),
 				})
 			}
 
@@ -186,10 +182,7 @@ var operationsMap = map[string]Operation{
 					ID:          "heap_blocks",
 					Name:        "Heap Blocks",
 					Type:        "string",
-					ValueFloat:  0,
 					ValueString: node[HEAP_BLOCKS].(string),
-					Skip:        false,
-					Kind:        "",
 				})
 			}
 
@@ -324,73 +317,61 @@ func getGenericWorkerProperties(w Node, work []Property) []Property {
 func hashBucketsAndBatches(node Node, props []Property) []Property {
 	if node["Memory Usage"] != nil {
 		props = append(props, Property{
-			ID:          "memory_usage",
-			Name:        "Memory Usage",
-			Type:        "float",
-			ValueFloat:  ConvertToFloat64(node["Memory Usage"]),
-			ValueString: "",
-			Skip:        false,
-			Kind:        DiskSize,
+			ID:         "memory_usage",
+			Name:       "Memory Usage",
+			Type:       "float",
+			ValueFloat: ConvertToFloat64(node["Memory Usage"]),
+			Kind:       DiskSize,
 		})
 	}
 
 	if node["Disk Usage"] != nil {
 		props = append(props, Property{
-			ID:          "disk_usage",
-			Name:        "Disk Usage",
-			Type:        "float",
-			ValueFloat:  ConvertToFloat64(node["Disk Usage"]),
-			ValueString: "",
-			Skip:        false,
-			Kind:        DiskSize,
+			ID:         "disk_usage",
+			Name:       "Disk Usage",
+			Type:       "float",
+			ValueFloat: ConvertToFloat64(node["Disk Usage"]),
+			Kind:       DiskSize,
 		})
 	}
 
 	if node[BATCHES] != nil {
 		props = append(props, Property{
-			ID:          "batches",
-			Name:        BATCHES,
-			Type:        "float",
-			ValueFloat:  ConvertToFloat64(node[BATCHES]),
-			ValueString: "",
-			Skip:        false,
-			Kind:        Quantity,
+			ID:         "batches",
+			Name:       BATCHES,
+			Type:       "float",
+			ValueFloat: ConvertToFloat64(node[BATCHES]),
+			Kind:       Quantity,
 		})
 	}
 
 	if node[BATCHES+" Originally"] != nil {
 		props = append(props, Property{
-			ID:          "batches_originally",
-			Name:        BATCHES + " Originally",
-			Type:        "float",
-			ValueFloat:  ConvertToFloat64(node[BATCHES+" Originally"]),
-			ValueString: "",
-			Skip:        false,
-			Kind:        Quantity,
+			ID:         "batches_originally",
+			Name:       BATCHES + " Originally",
+			Type:       "float",
+			ValueFloat: ConvertToFloat64(node[BATCHES+" Originally"]),
+			Kind:       Quantity,
 		})
 	}
 
 	if node["Buckets"] != nil {
 		props = append(props, Property{
-			ID:          "buckets",
-			Name:        "Buckets",
-			Type:        "float",
-			ValueFloat:  ConvertToFloat64(node["Buckets"]),
-			ValueString: "",
-			Skip:        false,
-			Kind:        Quantity,
+			ID:         "buckets",
+			Name:       "Buckets",
+			Type:       "float",
+			ValueFloat: ConvertToFloat64(node["Buckets"]),
+			Kind:       Quantity,
 		})
 	}
 
 	if node["Buckets"+" Originally"] != nil {
 		props = append(props, Property{
-			ID:          "buckets_originally",
-			Name:        "Buckets" + " Originally",
-			Type:        "float",
-			ValueFloat:  ConvertToFloat64(node["Buckets Originally"]),
-			ValueString: "",
-			Skip:        false,
-			Kind:        Quantity,
+			ID:         "buckets_originally",
+			Name:       "Buckets" + " Originally",
+			Type:       "float",
+			ValueFloat: ConvertToFloat64(node["Buckets Originally"]),
+			Kind:       Quantity,
 		})
 	}
 
